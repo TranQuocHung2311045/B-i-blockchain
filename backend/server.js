@@ -2,9 +2,9 @@ require("dotenv").config();
 const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
-const Database = require("better-sqlite3");
+const { DatabaseSync } = require("node:sqlite");
 
-const db = new Database(path.join(__dirname, "moto.db"));
+const db = new DatabaseSync(path.join(__dirname, "moto.db"));
 db.exec(`CREATE TABLE IF NOT EXISTS records(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   plate TEXT NOT NULL, date TEXT NOT NULL, odo INTEGER NOT NULL,
@@ -50,7 +50,7 @@ app.post("/api/records", (req, res) => {
   r.hash = hashOf(r);
   const info = db.prepare(`INSERT INTO records(plate,date,odo,type,description,cost,garage,prev_hash,hash)
     VALUES(@plate,@date,@odo,@type,@description,@cost,@garage,@prev_hash,@hash)`).run(r);
-  res.status(201).json({ id: info.lastInsertRowid, hash: r.hash });
+  res.status(201).json({ id: Number(info.lastInsertRowid), hash: r.hash });
 });
 
 // Tra cuu + kiem tra toan ven
