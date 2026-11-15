@@ -68,9 +68,22 @@ Mở `backend/moto.db` bằng DB Browser for SQLite, sửa `odo` hoặc `descrip
 | PATCH | `/api/records/:id/tx` | Lưu mã giao dịch sau khi neo |
 | GET | `/api/config` | Địa chỉ contract, chainId |
 
+## Đăng nhập
+
+Hệ thống dùng **một tài khoản garage duy nhất**, cấu hình trong `backend/.env` (`GARAGE_NAME`, `ADMIN_USER`, `ADMIN_PASS`, `JWT_SECRET`).
+
+| Đối tượng | Quyền |
+|---|---|
+| Người mua (không đăng nhập) | Tra cứu biển số, quét QR, xác thực mã băm on-chain |
+| Garage (đăng nhập) | Ghi mốc bảo trì (tên garage lấy từ cấu hình, không tự nhập được), neo mã băm lên Sepolia |
+
+- Token đăng nhập ký HMAC-SHA256, hết hạn sau 8 giờ; sai mật khẩu 5 lần thì khóa 1 phút.
+- Ví deploy Smart Contract mặc định được phép gọi `anchor`, nên hãy dùng chính ví đó khi neo.
+
+API: `POST /api/login`, `GET /api/me`. `POST /api/records` và `PATCH /api/records/:id/tx` yêu cầu đăng nhập; `GET /api/vehicles/:plate` công khai.
+
 ## Hạn chế và hướng phát triển
 
-- Chưa có đăng nhập cho garage (hiện chỉ giới hạn quyền neo bằng ví on-chain).
 - Quét QR bằng camera chưa có; mã QR dẫn tới trang tra cứu.
 - Có thể chuyển SQLite sang MySQL/PostgreSQL bằng cách thay lớp truy cập dữ liệu trong `server.js`.
 - Không bao giờ dùng ví chứa tiền thật cho `PRIVATE_KEY`.

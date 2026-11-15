@@ -10,14 +10,15 @@
 :root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6ec;--ac:#e8590c;--ok:#1a7f4b;--bad:#c62828;--warn:#b26a00}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--tx:#eceff4;--mut:#98a2b3;--bd:#2a303c;--ac:#ff8a4c;--ok:#4cc38a;--bad:#ff6b6b;--warn:#f0b04a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,sans-serif}
-.w{max-width:860px;margin:0 auto;padding:16px}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 10px}
+.w{max-width:900px;margin:0 auto;padding:16px}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 10px}
 header{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
 .sub{color:var(--mut);font-size:13px}
-nav{display:flex;gap:6px;margin-bottom:12px}
+nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 nav button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:999px;cursor:pointer}
 nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
 .c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
 input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input[readonly]{opacity:.7}
 label{font-size:13px;color:var(--mut);display:block;margin-bottom:3px}
 .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 .btn{background:var(--ac);color:#fff;border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
@@ -28,21 +29,36 @@ label{font-size:13px;color:var(--mut);display:block;margin-bottom:3px}
 .b{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin:2px 4px 2px 0}
 .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.hide{display:none}
 .h{word-break:break-all;color:var(--mut);font-size:11px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--bd);vertical-align:top}
+.sc{overflow-x:auto}
 </style>
 </head>
 <body>
 <div class="w">
 <header>
  <div><h1>🏍️ Moto Maintenance Chain</h1><div class="sub">Nhật ký bảo trì xe máy · SHA-256 neo trên Sepolia</div></div>
- <div style="text-align:right"><button class="btn s" id="wbtn">Kết nối MetaMask</button><div class="sub" id="wst">Chưa kết nối</div></div>
+ <div style="text-align:right">
+  <button class="btn s" id="wbtn">Kết nối MetaMask</button><div class="sub" id="wst">Chưa kết nối</div>
+  <div class="sub" id="who"></div>
+ </div>
 </header>
-<nav><button class="on" data-t="look">Tra cứu / Xác thực</button><button data-t="add">Ghi bảo trì</button></nav>
+<nav id="nav"></nav>
 
 <section id="look">
  <div class="c"><h2>Tra cứu theo biển số</h2>
   <div class="row"><div><label>Biển số xe</label><input id="q" placeholder="VD: 59A1-123.45"></div><button class="btn" id="go">Tra cứu</button></div>
  </div>
  <div id="res"></div>
+</section>
+
+<section id="login" class="hide">
+ <div class="c" style="max-width:420px"><h2>Đăng nhập garage</h2>
+  <label>Tên đăng nhập</label><input id="l_u" autocomplete="username">
+  <label style="margin-top:8px">Mật khẩu</label><input id="l_p" type="password" autocomplete="current-password">
+  <div style="margin-top:10px"><button class="btn" id="l_go">Đăng nhập</button></div>
+  <div class="sub" id="l_msg" style="margin-top:8px"></div>
+  <p class="sub">Người mua không cần đăng nhập để tra cứu. Tài khoản garage được cấu hình trong file backend/.env.</p>
+ </div>
 </section>
 
 <section id="add" class="hide">
@@ -53,28 +69,61 @@ label{font-size:13px;color:var(--mut);display:block;margin-bottom:3px}
    <div><label>ODO (km)</label><input id="a_o" type="number" min="0"></div>
    <div><label>Loại</label><select id="a_t"><option>Bảo dưỡng định kỳ</option><option>Sửa chữa</option><option>Thay nhớt</option><option>Thay phụ tùng</option><option>Tai nạn / va chạm</option></select></div>
    <div><label>Chi phí (VNĐ)</label><input id="a_c" type="number" min="0"></div>
-   <div><label>Garage / cửa hàng</label><input id="a_g"></div>
+   <div><label>Garage (theo tài khoản)</label><input id="a_g" readonly></div>
   </div>
   <div style="margin-top:10px"><label>Mô tả công việc</label><textarea id="a_x" rows="3"></textarea></div>
   <div style="margin-top:10px"><button class="btn" id="save">Lưu vào CSDL &amp; tạo mã băm</button></div>
   <div class="sub" id="amsg" style="margin-top:8px"></div>
  </div>
 </section>
+
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
 const ABI=["function anchor(bytes32 h)","function records(bytes32) view returns (address garage,uint256 ts)"];
-let cfg={contract:"",chainId:11155111},signer=null,prov=null,curPlate="";
+let cfg={contract:"",chainId:11155111},signer=null,prov=null,curPlate="",me=null,tok="",tab="look";
+try{tok=localStorage.getItem("mmc_t")||""}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt=n=>Number(n).toLocaleString("vi-VN");
-const api=async(u,o)=>{const r=await fetch(u,o),j=await r.json();if(!r.ok)throw new Error(j.error||"Lỗi máy chủ");return j};
+const canWrite=()=>!!me;
+async function api(u,o={}){
+ o.headers=Object.assign({},o.headers||{},tok?{Authorization:"Bearer "+tok}:{});
+ const r=await fetch(u,o),j=await r.json().catch(()=>({}));
+ if(!r.ok){if(r.status===401&&tok)setSession("",null);throw new Error(j.error||"Lỗi máy chủ")}
+ return j;
+}
+const post=(u,b,m="POST")=>api(u,{method:m,headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
 fetch("/api/config").then(r=>r.json()).then(c=>cfg=c).catch(()=>{});
 
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
- document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
- $("look").classList.toggle("hide",b.dataset.t!=="look");$("add").classList.toggle("hide",b.dataset.t!=="add");
-});
+function setSession(t,u){
+ tok=t;me=u;try{t?localStorage.setItem("mmc_t",t):localStorage.removeItem("mmc_t")}catch(e){}
+ $("who").innerHTML=me?"👤 "+esc(me.username)+" ("+esc(me.garage_name)+') · <a href="#" id="lo">Đăng xuất</a>':"";
+ if(me)$("lo").onclick=e=>{e.preventDefault();setSession("",null);show("look")};
+ $("a_g").value=me?me.garage_name||me.username:"";
+ buildNav();if(!allowed(tab))show("look");
+ if(curPlate&&$("res").innerHTML)look(curPlate);
+}
+const allowed=t=>t==="look"||(t==="login"&&!me)||(t==="add"&&canWrite());
+function buildNav(){
+ const t=[["look","Tra cứu / Xác thực"]];
+ if(canWrite())t.push(["add","Ghi bảo trì"]);
+ if(!me)t.push(["login","Đăng nhập"]);
+ $("nav").innerHTML=t.map(x=>'<button data-t="'+x[0]+'"'+(x[0]===tab?' class="on"':"")+">"+x[1]+"</button>").join("");
+ $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>show(b.dataset.t));
+}
+function show(t){
+ if(!allowed(t))t="look";tab=t;
+ ["look","login","add"].forEach(x=>$(x).classList.toggle("hide",x!==t));
+ buildNav();
+}
+
+$("l_go").onclick=async()=>{
+ try{const j=await post("/api/login",{username:$("l_u").value,password:$("l_p").value});
+  $("l_p").value="";$("l_msg").textContent="";setSession(j.token,j.user);show("add")}
+ catch(e){$("l_msg").className="sub bad";$("l_msg").textContent=e.message}
+};
+$("l_p").onkeydown=e=>{if(e.key==="Enter")$("l_go").click()};
 
 $("wbtn").onclick=async()=>{
  if(!window.ethereum){$("wst").textContent="Chưa cài MetaMask";return}
@@ -90,27 +139,35 @@ $("wbtn").onclick=async()=>{
 $("save").onclick=async()=>{
  const m=$("amsg");
  try{
-  const j=await api("/api/records",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-   plate:$("a_p").value,date:$("a_d").value,odo:$("a_o").value,type:$("a_t").value,
-   cost:$("a_c").value,garage:$("a_g").value,description:$("a_x").value})});
+  const j=await post("/api/records",{plate:$("a_p").value,date:$("a_d").value,odo:$("a_o").value,type:$("a_t").value,cost:$("a_c").value,description:$("a_x").value});
   m.className="sub ok";m.textContent="Đã lưu. Mã băm: "+j.hash+" — vào Tra cứu để neo lên blockchain.";
  }catch(e){m.className="sub bad";m.textContent=e.message}
 };
 
+async function contract(){
+ if(!/^0x[0-9a-fA-F]{40}$/.test(cfg.contract))throw new Error("Chưa cấu hình CONTRACT_ADDRESS ở backend/.env");
+ if(!signer)throw new Error("Hãy kết nối MetaMask (Sepolia)");
+ if((await prov.getNetwork()).chainId!==11155111)throw new Error("Hãy chuyển MetaMask sang Sepolia");
+ return new ethers.Contract(cfg.contract,ABI,signer);
+}
+
+// ---- Tra cuu ----
 $("go").onclick=()=>look($("q").value);
 $("q").onkeydown=e=>{if(e.key==="Enter")look($("q").value)};
 async function look(raw){
- const box=$("res");if(!raw.trim())return;
+ const box=$("res");if(!String(raw).trim())return;
  let d;try{d=await api("/api/vehicles/"+encodeURIComponent(raw))}catch(e){box.innerHTML='<div class="c">'+esc(e.message)+"</div>";return}
  curPlate=d.plate;
  const chk=(ok,y,n)=>'<span class="b '+(ok?"ok":"bad")+'">'+(ok?y:n)+"</span>";
- const items=d.records.map(r=>'<div class="it"><b>'+esc(r.date)+" · "+fmt(r.odo)+" km</b> — "+esc(r.type)+
+ const items=d.records.map(r=>{
+  const mine=!!me;
+  return '<div class="it"><b>'+esc(r.date)+" · "+fmt(r.odo)+" km</b> — "+esc(r.type)+
   "<div>"+esc(r.description)+(r.garage?' <span class="sub">@ '+esc(r.garage)+"</span>":"")+(r.cost?' <span class="sub">· '+fmt(r.cost)+"đ</span>":"")+"</div>"+
   chk(r.checks.hash,"Dữ liệu khớp mã băm","Dữ liệu bị sửa")+chk(r.checks.chain,"Chuỗi liên kết đúng","Chuỗi đứt")+chk(r.checks.odo,"ODO hợp lệ","ODO giảm - nghi gian lận")+
   '<span class="b warn" id="ch'+r.id+'">'+(r.tx_hash?"Đã neo":"Chưa kiểm tra on-chain")+"</span>"+
   '<div class="h">'+r.hash+'</div><button class="btn s" data-v="'+r.id+'" data-h="'+r.hash+'">Xác thực on-chain</button> '+
-  '<button class="btn s" data-a="'+r.id+'" data-h="'+r.hash+'">Neo lên Sepolia</button>'+
-  (r.tx_hash?' <a class="sub" target="_blank" rel="noopener" href="https://sepolia.etherscan.io/tx/'+r.tx_hash+'">Etherscan</a>':"")+"</div>").join("");
+  (mine&&!r.tx_hash?'<button class="btn s" data-a="'+r.id+'" data-h="'+r.hash+'">Neo lên Sepolia</button>':"")+
+  (r.tx_hash?' <a class="sub" target="_blank" rel="noopener" href="https://sepolia.etherscan.io/tx/'+r.tx_hash+'">Etherscan</a>':"")+"</div>"}).join("");
  const url=location.origin+location.pathname+"#xe-"+d.plate;
  let qr="";try{const q=qrcode(0,"M");q.addData(url);q.make();qr=q.createSvgTag(4)}catch(e){}
  box.innerHTML='<div class="c"><h2>Xe '+esc(d.plate)+" · "+d.total+" mốc · "+fmt(d.maxOdo)+' km</h2><b class="'+(d.issues?"bad":"ok")+'">'+
@@ -122,14 +179,10 @@ async function look(raw){
 async function chain(id,hash,write){
  const el=$("ch"+id);
  try{
-  if(!/^0x[0-9a-fA-F]{40}$/.test(cfg.contract))throw new Error("Chưa cấu hình CONTRACT_ADDRESS ở backend/.env");
-  if(!signer)throw new Error("Hãy kết nối MetaMask (Sepolia)");
-  if((await prov.getNetwork()).chainId!==11155111)throw new Error("Hãy chuyển MetaMask sang Sepolia");
-  const c=new ethers.Contract(cfg.contract,ABI,signer);
+  const c=await contract();
   if(write){
    el.textContent="Đang chờ ký...";const tx=await c.anchor(hash);el.textContent="Đang xác nhận...";await tx.wait();
-   await api("/api/records/"+id+"/tx",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({tx:tx.hash})});
-   look(curPlate);
+   await post("/api/records/"+id+"/tx",{tx:tx.hash},"PATCH");look(curPlate);
   }else{
    const o=await c.records(hash);
    if(o.ts.isZero()){el.className="b bad";el.textContent="Không có trên blockchain"}
@@ -137,7 +190,12 @@ async function chain(id,hash,write){
   }
  }catch(e){el.className="b bad";el.textContent=(e.reason||e.message||"Lỗi").slice(0,90)}
 }
-const m=location.hash.match(/^#xe-(.+)$/);if(m){$("q").value=m[1];look(m[1])}
+
+(async()=>{
+ buildNav();
+ if(tok){try{setSession(tok,await api("/api/me"))}catch(e){setSession("",null)}}
+ const m=location.hash.match(/^#xe-(.+)$/);if(m){$("q").value=m[1];look(m[1])}
+})();
 </script>
 </body>
 </html>
