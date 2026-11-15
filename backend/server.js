@@ -44,12 +44,30 @@ const hashOf = r => "0x" + crypto.createHash("sha256").update(
 ).digest("hex");
 const list = plate => db.prepare("SELECT * FROM records WHERE plate=? ORDER BY date, odo, id").all(plate);
 
+// ---------- Nhac bao duong dinh ky ----------
+const SERVICE_KM = Number(process.env.SERVICE_KM) || 2000;
+const SERVICE_MONTHS = Number(process.env.SERVICE_MONTHS) || 6;
+const isService = t => { const x = String(t).normalize("NFC").toLowerCase(); return x.includes("định kỳ") || x.includes("nhớt"); };
+function reminder(rows) { // rows da sap xep theo ngay, ODO
+  const svc = rows.filter(r => isService(r.type)), base = (svc.length ? svc : rows).slice(-1)[0];
+  const maxOdo = Math.max(...rows.map(r => r.odo));
+  const [y, m, d] = base.date.split("-").map(Number);
+  const due = new Date(Date.UTC(y, m - 1 + SERVICE_MONTHS, d));
+  const dueDate = due.toISOString().slice(0, 10), dueOdo = base.odo + SERVICE_KM;
+  const kmLeft = dueOdo - maxOdo, daysLeft = Math.ceil((due - Date.now()) / 864e5);
+  const status = kmLeft <= 0 || daysLeft <= 0 ? "due" : (kmLeft <= SERVICE_KM * 0.15 || daysLeft <= 30 ? "soon" : "ok");
+  const text = status === "due"
+    ? `Đã quá hạn bảo dưỡng: hạn là ${dueOdo} km hoặc ngày ${dueDate} (ODO ghi nhận gần nhất ${maxOdo} km).`
+    : `Còn khoảng ${kmLeft} km hoặc ${daysLeft} ngày nữa (hạn ${dueOdo} km / ${dueDate}).`;
+  return { status, dueOdo, dueDate, kmLeft, daysLeft, text, base: { date: base.date, odo: base.odo, type: base.type } };
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/config", (_q, res) =>
-  res.json({ contract: process.env.CONTRACT_ADDRESS || "", chainId: 11155111 }));
+  res.json({ contract: process.env.CONTRACT_ADDRESS || "", chainId: 11155111, serviceKm: SERVICE_KM, serviceMonths: SERVICE_MONTHS }));
 
 // ---------- Dang nhap ----------
 let fails = { n: 0, t: 0 }; // 5 lan sai thi khoa 1 phut
@@ -102,7 +120,7 @@ app.get("/api/vehicles/:plate", (req, res) => {
     prev = r.hash; maxOdo = Math.max(maxOdo, r.odo);
     return { ...r, checks };
   });
-  res.json({ plate, total: rows.length, maxOdo, issues, records });
+  res.json({ plate, total: rows.length, maxOdo, issues, records, reminder: reminder(rows) });
 });
 
 app.patch("/api/records/:id/tx", auth, (req, res) => {
@@ -110,6 +128,32 @@ app.patch("/api/records/:id/tx", auth, (req, res) => {
   if (!/^0x[0-9a-fA-F]{64}$/.test(tx)) return res.status(400).json({ error: "tx hash không hợp lệ" });
   const info = db.prepare("UPDATE records SET tx_hash=? WHERE id=?").run(tx, req.params.id);
   info.changes ? res.json({ ok: true }) : res.status(404).json({ error: "Không thấy bản ghi" });
+});
+
+// ---------- Thong ke (can dang nhap) ----------
+app.get("/api/stats", auth, (_q, res) => {
+  const all = db.prepare("SELECT * FROM records ORDER BY plate, date, odo, id").all();
+  const by = {};
+  all.forEach(r => (by[r.plate] = by[r.plate] || []).push(r));
+  let issueVehicles = 0; const alerts = [];
+  for (const [plate, rows] of Object.entries(by)) {
+    let prev = "0x0", maxOdo = -1, bad = false;
+    for (const r of rows) {
+      if (hashOf(r) !== r.hash || r.prev_hash !== prev || r.odo < maxOdo) bad = true;
+      prev = r.hash; maxOdo = Math.max(maxOdo, r.odo);
+    }
+    if (bad) issueVehicles++;
+    const rm = reminder(rows);
+    if (rm.status !== "ok") alerts.push({ plate, status: rm.status, text: rm.text });
+  }
+  alerts.sort((a, b) => (a.status === "due" ? 0 : 1) - (b.status === "due" ? 0 : 1));
+  res.json({
+    vehicles: Object.keys(by).length, records: all.length,
+    totalCost: all.reduce((t, r) => t + r.cost, 0), anchored: all.filter(r => r.tx_hash).length,
+    issueVehicles, alerts,
+    byType: db.prepare("SELECT type, COUNT(*) c FROM records GROUP BY type ORDER BY c DESC").all().map(x => ({ ...x })),
+    byMonth: db.prepare("SELECT substr(date,1,7) m, COUNT(*) c, SUM(cost) s FROM records GROUP BY m ORDER BY m DESC LIMIT 12").all().map(x => ({ ...x })).reverse()
+  });
 });
 
 const port = process.env.PORT || 3000;

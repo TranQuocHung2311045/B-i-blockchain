@@ -82,6 +82,14 @@ Hệ thống dùng **một tài khoản garage duy nhất**, cấu hình trong `
 
 API: `POST /api/login`, `GET /api/me`. `POST /api/records` và `PATCH /api/records/:id/tx` yêu cầu đăng nhập; `GET /api/vehicles/:plate` công khai.
 
+## Tính năng bổ sung
+
+- **Nhắc bảo dưỡng định kỳ:** tính từ lần "Bảo dưỡng định kỳ" hoặc "Thay nhớt" gần nhất, đến hạn sau `SERVICE_KM` km hoặc `SERVICE_MONTHS` tháng (mặc định 2000 km / 6 tháng, chỉnh trong `.env`). Trạng thái: chưa đến hạn, sắp đến hạn (còn dưới 15% quãng đường hoặc dưới 30 ngày), đã đến hạn.
+- **Xuất báo cáo PDF:** nút "Xuất báo cáo PDF" ở trang tra cứu mở hộp thoại in của trình duyệt, chọn "Lưu dưới dạng PDF". Báo cáo có kết luận xác thực, lịch sử đầy đủ, mã băm, mã giao dịch Sepolia và mã QR.
+- **Thống kê và biểu đồ** (cần đăng nhập): tổng số xe, số mốc, tổng chi phí, số mốc đã neo, xe bất thường, danh sách xe cần nhắc, biểu đồ theo tháng và theo loại công việc. Trang tra cứu có thêm biểu đồ ODO theo thời gian, mốc ODO giảm được tô đỏ.
+
+API bổ sung: `GET /api/stats` (cần đăng nhập). `GET /api/vehicles/:plate` trả thêm trường `reminder`.
+
 ## Hạn chế và hướng phát triển
 
 - Quét QR bằng camera chưa có; mã QR dẫn tới trang tra cứu.

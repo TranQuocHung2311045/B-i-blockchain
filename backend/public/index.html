@@ -6,6 +6,7 @@
 <title>Moto Maintenance Chain</title>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6ec;--ac:#e8590c;--ok:#1a7f4b;--bad:#c62828;--warn:#b26a00}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--tx:#eceff4;--mut:#98a2b3;--bd:#2a303c;--ac:#ff8a4c;--ok:#4cc38a;--bad:#ff6b6b;--warn:#f0b04a}}
@@ -31,6 +32,15 @@ label{font-size:13px;color:var(--mut);display:block;margin-bottom:3px}
 .h{word-break:break-all;color:var(--mut);font-size:11px}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--bd);vertical-align:top}
 .sc{overflow-x:auto}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.kpi>div{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}.kpi b{font-size:22px;display:block}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.cv{position:relative;height:240px}
+#report{display:none}
+@media print{body{background:#fff!important}.w{display:none!important}
+#report{display:block!important;color:#000;background:#fff;font:13px/1.5 system-ui,sans-serif}
+#report table{width:100%;border-collapse:collapse}#report th,#report td{border:1px solid #bbb;padding:5px;text-align:left;vertical-align:top}
+#report .h{color:#444;font-size:10px;word-break:break-all}}
 </style>
 </head>
 <body>
@@ -61,6 +71,16 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
  </div>
 </section>
 
+<section id="stats" class="hide">
+ <div class="kpi" id="kpi"></div>
+ <div class="c"><h2>Xe cần nhắc bảo dưỡng</h2><div id="alerts" class="sub"></div></div>
+ <div class="g2">
+  <div class="c"><h2>Số mốc theo tháng</h2><div class="cv"><canvas id="c_m"></canvas></div></div>
+  <div class="c"><h2>Chi phí theo tháng (VNĐ)</h2><div class="cv"><canvas id="c_c"></canvas></div></div>
+  <div class="c"><h2>Theo loại công việc</h2><div class="cv"><canvas id="c_t"></canvas></div></div>
+ </div>
+</section>
+
 <section id="add" class="hide">
  <div class="c"><h2>Thêm mốc bảo trì / sửa chữa</h2>
   <div class="g">
@@ -79,10 +99,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 
 </div>
 
+<div id="report"></div>
 <script>
 const $=id=>document.getElementById(id);
 const ABI=["function anchor(bytes32 h)","function records(bytes32) view returns (address garage,uint256 ts)"];
-let cfg={contract:"",chainId:11155111},signer=null,prov=null,curPlate="",me=null,tok="",tab="look";
+let cfg={contract:"",chainId:11155111},signer=null,prov=null,curPlate="",me=null,tok="",tab="look",lastData=null,lastUrl="",lastQr="",charts={};
 try{tok=localStorage.getItem("mmc_t")||""}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt=n=>Number(n).toLocaleString("vi-VN");
@@ -104,18 +125,18 @@ function setSession(t,u){
  buildNav();if(!allowed(tab))show("look");
  if(curPlate&&$("res").innerHTML)look(curPlate);
 }
-const allowed=t=>t==="look"||(t==="login"&&!me)||(t==="add"&&canWrite());
+const allowed=t=>t==="look"||(t==="login"&&!me)||(t==="add"&&canWrite())||(t==="stats"&&!!me);
 function buildNav(){
  const t=[["look","Tra cứu / Xác thực"]];
- if(canWrite())t.push(["add","Ghi bảo trì"]);
+ if(canWrite())t.push(["add","Ghi bảo trì"],["stats","Thống kê"]);
  if(!me)t.push(["login","Đăng nhập"]);
  $("nav").innerHTML=t.map(x=>'<button data-t="'+x[0]+'"'+(x[0]===tab?' class="on"':"")+">"+x[1]+"</button>").join("");
  $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>show(b.dataset.t));
 }
 function show(t){
  if(!allowed(t))t="look";tab=t;
- ["look","login","add"].forEach(x=>$(x).classList.toggle("hide",x!==t));
- buildNav();
+ ["look","login","add","stats"].forEach(x=>$(x).classList.toggle("hide",x!==t));
+ buildNav();if(t==="stats")loadStats();
 }
 
 $("l_go").onclick=async()=>{
@@ -151,6 +172,48 @@ async function contract(){
  return new ethers.Contract(cfg.contract,ABI,signer);
 }
 
+// ---- Bieu do / thong ke / PDF ----
+function mk(id,cfg){
+ const el=$(id);if(!el||!window.Chart)return;
+ if(charts[id])charts[id].destroy();
+ Chart.defaults.color=getComputedStyle(document.body).color;
+ charts[id]=new Chart(el,cfg);
+}
+function qrSvg(url){try{const q=qrcode(0,"M");q.addData(url);q.make();return q.createSvgTag(4)}catch(e){return ""}}
+async function loadStats(){
+ try{
+  const s=await api("/api/stats");
+  $("kpi").innerHTML=[["Số xe",s.vehicles],["Số mốc bảo trì",s.records],["Tổng chi phí",fmt(s.totalCost)+"đ"],["Đã neo on-chain",s.anchored+"/"+s.records],["Xe bất thường",s.issueVehicles]]
+   .map(x=>'<div><span class="sub">'+x[0]+"</span><b>"+x[1]+"</b></div>").join("");
+  $("alerts").innerHTML=s.alerts.length?s.alerts.map(a=>'<div style="margin:6px 0"><a href="#" data-p="'+esc(a.plate)+'"><b>'+esc(a.plate)+'</b></a> <span class="b '+(a.status==="due"?"bad":"warn")+'">'+(a.status==="due"?"Đã đến hạn":"Sắp đến hạn")+"</span> "+esc(a.text)+"</div>").join(""):"Không có xe nào cần nhắc.";
+  $("alerts").querySelectorAll("[data-p]").forEach(a=>a.onclick=e=>{e.preventDefault();show("look");$("q").value=a.dataset.p;look(a.dataset.p)});
+  const opt={maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}};
+  mk("c_m",{type:"bar",data:{labels:s.byMonth.map(x=>x.m),datasets:[{label:"Số mốc",data:s.byMonth.map(x=>x.c),backgroundColor:"#e8590c"}]},options:opt});
+  mk("c_c",{type:"bar",data:{labels:s.byMonth.map(x=>x.m),datasets:[{label:"Chi phí",data:s.byMonth.map(x=>x.s),backgroundColor:"#1a7f4b"}]},options:Object.assign({},opt,{scales:{y:{beginAtZero:true}}})});
+  mk("c_t",{type:"doughnut",data:{labels:s.byType.map(x=>x.type),datasets:[{data:s.byType.map(x=>x.c),backgroundColor:["#e8590c","#1a7f4b","#3b82f6","#b26a00","#8b5cf6","#c62828"]}]},options:{maintainAspectRatio:false}});
+ }catch(e){$("kpi").innerHTML='<div class="bad">'+esc(e.message)+"</div>"}
+}
+function drawOdo(d){
+ mk("c_o",{type:"line",data:{labels:d.records.map(r=>r.date),datasets:[{label:"ODO (km)",data:d.records.map(r=>r.odo),borderColor:"#e8590c",backgroundColor:"#e8590c",tension:.2,pointRadius:5,pointBackgroundColor:d.records.map(r=>r.checks.odo?"#e8590c":"#c62828")}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+}
+const RM={due:["bad","Đã đến hạn"],soon:["warn","Sắp đến hạn"],ok:["ok","Chưa đến hạn"]};
+function exportPdf(){
+ const d=lastData;if(!d)return;
+ const rm=d.reminder;
+ const rows=d.records.map((r,i)=>{
+  const c=r.checks,bad=[!c.hash&&"dữ liệu bị sửa",!c.chain&&"chuỗi đứt",!c.odo&&"ODO giảm"].filter(Boolean);
+  return "<tr><td>"+(i+1)+"</td><td>"+esc(r.date)+"</td><td>"+fmt(r.odo)+" km</td><td><b>"+esc(r.type)+"</b><br>"+esc(r.description)+"</td><td>"+esc(r.garage)+"</td><td>"+fmt(r.cost)+"đ</td><td>"+(bad.length?"Bất thường: "+bad.join(", "):"Hợp lệ")+
+   '</td><td class="h">'+r.hash+"<br>"+(r.tx_hash?"Giao dịch Sepolia: "+r.tx_hash:"Chưa neo on-chain")+"</td></tr>"}).join("");
+ $("report").innerHTML='<h1 style="margin:0 0 4px">Báo cáo lịch sử bảo trì xe '+esc(d.plate)+"</h1>"+
+  "<p>Ngày xuất: "+new Date().toLocaleString("vi-VN")+" · Hệ thống Moto Maintenance Chain</p>"+
+  "<p><b>Kết luận:</b> "+(d.issues?"Phát hiện "+d.issues+" mốc bất thường":"Lịch sử toàn vẹn, ODO nhất quán")+" · "+d.total+" mốc · ODO ghi nhận gần nhất "+fmt(d.maxOdo)+" km</p>"+
+  (rm?"<p><b>Nhắc bảo dưỡng ("+RM[rm.status][1]+"):</b> "+esc(rm.text)+"</p>":"")+
+  "<table><thead><tr><th>#</th><th>Ngày</th><th>ODO</th><th>Công việc</th><th>Garage</th><th>Chi phí</th><th>Kiểm tra</th><th>Mã băm SHA-256 / Giao dịch</th></tr></thead><tbody>"+rows+"</tbody></table>"+
+  '<p style="margin-top:12px">Smart Contract (Sepolia): <span class="h">'+esc(cfg.contract||"chưa cấu hình")+"</span><br>Xác thực online: <span class=\"h\">"+esc(lastUrl)+'</span></p><div style="background:#fff;display:inline-block;padding:6px">'+lastQr+"</div>";
+ const old=document.title;document.title="BaoCao_"+d.plate;
+ window.print();document.title=old;
+}
+
 // ---- Tra cuu ----
 $("go").onclick=()=>look($("q").value);
 $("q").onkeydown=e=>{if(e.key==="Enter")look($("q").value)};
@@ -168,11 +231,14 @@ async function look(raw){
   '<div class="h">'+r.hash+'</div><button class="btn s" data-v="'+r.id+'" data-h="'+r.hash+'">Xác thực on-chain</button> '+
   (mine&&!r.tx_hash?'<button class="btn s" data-a="'+r.id+'" data-h="'+r.hash+'">Neo lên Sepolia</button>':"")+
   (r.tx_hash?' <a class="sub" target="_blank" rel="noopener" href="https://sepolia.etherscan.io/tx/'+r.tx_hash+'">Etherscan</a>':"")+"</div>"}).join("");
- const url=location.origin+location.pathname+"#xe-"+d.plate;
- let qr="";try{const q=qrcode(0,"M");q.addData(url);q.make();qr=q.createSvgTag(4)}catch(e){}
+ const url=location.origin+location.pathname+"#xe-"+d.plate,qr=qrSvg(url);
+ lastData=d;lastUrl=url;lastQr=qr;
+ const rm=d.reminder,rmHtml=rm?'<div class="c"><h2>Nhắc bảo dưỡng định kỳ</h2><span class="b '+RM[rm.status][0]+'">'+RM[rm.status][1]+"</span> "+esc(rm.text)+
+  '<div class="sub">Quy tắc: mỗi '+fmt(cfg.serviceKm||2000)+" km hoặc "+(cfg.serviceMonths||6)+" tháng kể từ lần bảo dưỡng gần nhất ("+esc(rm.base.date)+", "+fmt(rm.base.odo)+" km), dựa trên ODO ghi nhận gần nhất.</div></div>":"";
  box.innerHTML='<div class="c"><h2>Xe '+esc(d.plate)+" · "+d.total+" mốc · "+fmt(d.maxOdo)+' km</h2><b class="'+(d.issues?"bad":"ok")+'">'+
-  (d.issues?"⚠ Phát hiện "+d.issues+" mốc bất thường":"✔ Lịch sử toàn vẹn, ODO nhất quán")+'</b></div><div class="c"><div class="tl">'+items+
+  (d.issues?"⚠ Phát hiện "+d.issues+" mốc bất thường":"✔ Lịch sử toàn vẹn, ODO nhất quán")+'</b> <button class="btn s" id="pdfb" style="float:right">Xuất báo cáo PDF</button></div>'+rmHtml+'<div class="c"><h2>Biểu đồ ODO theo thời gian</h2><div class="cv"><canvas id="c_o"></canvas></div></div><div class="c"><div class="tl">'+items+
   '</div></div><div class="c"><h2>Mã QR tra cứu</h2><div style="background:#fff;display:inline-block;padding:8px;border-radius:8px">'+qr+'</div></div>';
+ drawOdo(d);$("pdfb").onclick=exportPdf;
  box.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>chain(b.dataset.v,b.dataset.h,false));
  box.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>chain(b.dataset.a,b.dataset.h,true));
 }
