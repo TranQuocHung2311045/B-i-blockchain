@@ -88,6 +88,9 @@ API: `POST /api/login`, `GET /api/me`. `POST /api/records` và `PATCH /api/recor
 - **Xuất báo cáo PDF:** nút "Xuất báo cáo PDF" ở trang tra cứu mở hộp thoại in của trình duyệt, chọn "Lưu dưới dạng PDF". Báo cáo có kết luận xác thực, lịch sử đầy đủ, mã băm, mã giao dịch Sepolia và mã QR.
 - **Thống kê và biểu đồ** (cần đăng nhập): tổng số xe, số mốc, tổng chi phí, số mốc đã neo, xe bất thường, danh sách xe cần nhắc, biểu đồ theo tháng và theo loại công việc. Trang tra cứu có thêm biểu đồ ODO theo thời gian, mốc ODO giảm được tô đỏ.
 
+- **Thông tin xe:** hãng, dòng xe, năm sản xuất, màu, số khung, số máy, lưu theo biển số và hiển thị khi tra cứu (`GET/PUT /api/vehicles/:plate/info`). Đây là siêu dữ liệu, không nằm trong mã băm của mốc.
+- **Ảnh hóa đơn đính kèm:** mỗi mốc có thể kèm ảnh hoặc PDF (tối đa 3 MB, ảnh được nén ở trình duyệt). Mã SHA-256 của tệp được đưa vào mã băm của mốc; khi tra cứu, hệ thống băm lại tệp đã lưu trong `backend/uploads/` để đối chiếu, nên thay hoặc sửa tệp sẽ báo "Ảnh bị thay đổi". Mốc cũ không có ảnh giữ nguyên mã băm. Lưu ý: tệp trong `uploads/` được phục vụ công khai để người mua xem hóa đơn.
+
 API bổ sung: `GET /api/stats` (cần đăng nhập). `GET /api/vehicles/:plate` trả thêm trường `reminder`.
 
 ## Hạn chế và hướng phát triển

@@ -4,110 +4,147 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Moto Maintenance Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6ec;--ac:#e8590c;--ok:#1a7f4b;--bad:#c62828;--warn:#b26a00}
-@media(prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--tx:#eceff4;--mut:#98a2b3;--bd:#2a303c;--ac:#ff8a4c;--ok:#4cc38a;--bad:#ff6b6b;--warn:#f0b04a}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,sans-serif}
-.w{max-width:900px;margin:0 auto;padding:16px}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 10px}
-header{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:12px}
+:root{--bg:#f3f4f8;--sf:#fff;--sf2:#f8f9fc;--ink:#0f172a;--mut:#64748b;--line:#e4e7ef;--brand:#ea580c;--brand2:#f97316;
+--ok:#15803d;--okbg:#dcfce7;--bad:#b91c1c;--badbg:#fee2e2;--warn:#b45309;--warnbg:#fef3c7;--info:#1d4ed8;--infobg:#dbeafe;
+--sh:0 1px 2px rgba(15,23,42,.05),0 8px 24px rgba(15,23,42,.06);--r:16px}
+@media(prefers-color-scheme:dark){:root{--bg:#0a0e16;--sf:#121926;--sf2:#18202f;--ink:#e8edf5;--mut:#94a3b8;--line:#212b3c;--brand:#fb923c;--brand2:#f97316;
+--ok:#4ade80;--okbg:rgba(74,222,128,.14);--bad:#f87171;--badbg:rgba(248,113,113,.15);--warn:#fbbf24;--warnbg:rgba(251,191,36,.14);--info:#60a5fa;--infobg:rgba(96,165,250,.15);
+--sh:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.w{max-width:960px;margin:0 auto;padding:0 18px}
+.top{background:var(--sf);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;backdrop-filter:blur(8px)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:22px;box-shadow:0 6px 16px rgba(234,88,12,.35)}
+h1{font-size:18px;margin:0;font-weight:800;letter-spacing:-.02em}h2{margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-.03em}h3{margin:0;font-size:16px;font-weight:700}
 .sub{color:var(--mut);font-size:13px}
-nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-nav button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:999px;cursor:pointer}
-nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
-.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
-input[readonly]{opacity:.7}
-label{font-size:13px;color:var(--mut);display:block;margin-bottom:3px}
-.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-.btn{background:var(--ac);color:#fff;border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
-.btn.s{background:transparent;color:var(--tx);border:1px solid var(--bd);font-weight:500;padding:6px 10px;font-size:13px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.row>div{flex:1;min-width:160px}
-.tl{border-left:3px solid var(--bd);margin-left:6px;padding-left:14px}
-.it{position:relative;margin-bottom:14px}.it:before{content:"";position:absolute;left:-22px;top:6px;width:11px;height:11px;border-radius:50%;background:var(--ac)}
-.b{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin:2px 4px 2px 0}
-.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.hide{display:none}
-.h{word-break:break-all;color:var(--mut);font-size:11px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--bd);vertical-align:top}
-.sc{overflow-x:auto}
-.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
-.kpi>div{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px}.kpi b{font-size:22px;display:block}
-.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
-.cv{position:relative;height:240px}
+.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chip{font-size:13px;background:var(--sf2);border:1px solid var(--line);border-radius:999px;padding:6px 12px}.chip a{color:var(--brand);font-weight:600;text-decoration:none}
+.tabs{display:flex;gap:4px;background:var(--sf);border:1px solid var(--line);border-radius:14px;padding:4px;margin:18px 0;width:fit-content;max-width:100%;overflow-x:auto;box-shadow:var(--sh)}
+.tabs button{border:0;background:transparent;color:var(--mut);padding:9px 16px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s}
+.tabs button:hover{color:var(--ink)}.tabs button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;box-shadow:0 4px 12px rgba(234,88,12,.3)}
+.card{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.hero{border-radius:20px;padding:34px 26px;margin-bottom:18px;color:#fff;background:radial-gradient(1200px 300px at 90% -20%,rgba(249,115,22,.55),transparent),linear-gradient(135deg,#0f172a,#1e293b);box-shadow:var(--sh)}
+.hero p{margin:0 0 18px;color:#cbd5e1;max-width:560px}
+.search{display:flex;gap:8px;background:#fff;border-radius:14px;padding:6px;max-width:560px}
+.search input{border:0;background:transparent;color:#0f172a;font-size:16px;padding:10px 12px;flex:1;min-width:0;outline:0;font-weight:600}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--sf2);color:var(--ink);font:inherit;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 3px rgba(234,88,12,.15)}
+label{font-size:12px;font-weight:600;color:var(--mut);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:14px 0}
+.btn{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:0;padding:10px 18px;border-radius:10px;cursor:pointer;font:inherit;font-weight:700;box-shadow:0 4px 12px rgba(234,88,12,.28);transition:.15s}
+.btn:hover{transform:translateY(-1px)}.btn.ghost{background:var(--sf);color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:600}
+.btn.sm{padding:6px 12px;font-size:13px;border-radius:8px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.g2>.card{margin-bottom:0}
+.banner{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:var(--r);margin-bottom:16px;border:1px solid}
+.banner.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}.banner.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad)}
+.banner b{font-size:16px}.banner .sub{color:inherit;opacity:.85}.bi{font-size:28px}.banner .btn{margin-left:auto}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin-top:12px;font-size:14px}.kv span:nth-child(odd){color:var(--mut)}.kv span:nth-child(even){font-weight:600}
+.plate{display:inline-block;font-weight:800;letter-spacing:.06em;font-size:20px;border:2px solid var(--ink);border-radius:8px;padding:2px 12px;margin-bottom:4px}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;margin:3px 4px 3px 0}
+.pill.ok{background:var(--okbg);color:var(--ok)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.warn{background:var(--warnbg);color:var(--warn)}.pill.info{background:var(--infobg);color:var(--info)}
+.tl{position:relative;margin-left:8px;padding-left:22px;border-left:2px solid var(--line)}
+.it{position:relative;margin-bottom:16px}.it:before{content:"";position:absolute;left:-30px;top:18px;width:14px;height:14px;border-radius:50%;background:var(--brand);border:3px solid var(--sf);box-shadow:0 0 0 2px var(--brand)}
+.it.x:before{background:var(--bad);box-shadow:0 0 0 2px var(--bad)}
+.itc{background:var(--sf2);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.ith{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.tag{background:var(--infobg);color:var(--info);font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px}.odo{margin-left:auto;font-weight:800}
+.h{word-break:break-all;color:var(--mut);font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.thumb{display:inline-flex;gap:10px;align-items:center;margin:8px 0;text-decoration:none;color:var(--ink);font-size:13px;font-weight:600}.thumb img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px}
+.kpi>div{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}.kpi b{font-size:26px;display:block;font-weight:800;letter-spacing:-.02em}.kpi i{font-style:normal;font-size:20px}
+.cv{position:relative;height:240px;margin-top:10px}
+.msg{font-size:13px}.ok-t{color:var(--ok)}.bad-t{color:var(--bad)}
+.file{border:2px dashed var(--line);border-radius:12px;padding:14px;background:var(--sf2)}
+.hide{display:none}.ph{font-size:12px}
 #report{display:none}
-@media print{body{background:#fff!important}.w{display:none!important}
-#report{display:block!important;color:#000;background:#fff;font:13px/1.5 system-ui,sans-serif}
+@media print{body{background:#fff!important}.top,.w{display:none!important}
+#report{display:block!important;color:#000;background:#fff;font:13px/1.5 system-ui,sans-serif;padding:0 8px}
 #report table{width:100%;border-collapse:collapse}#report th,#report td{border:1px solid #bbb;padding:5px;text-align:left;vertical-align:top}
-#report .h{color:#444;font-size:10px;word-break:break-all}}
+#report .h{color:#444;font-size:10px}}
+@media(max-width:560px){.hero{padding:24px 18px}h2{font-size:22px}.banner{flex-wrap:wrap}.banner .btn{margin-left:0}}
 </style>
 </head>
 <body>
+<div class="top"><div class="bar" style="max-width:960px;margin:0 auto">
+ <div class="brand"><div class="logo">🏍️</div><div><h1>Moto Maintenance Chain</h1><div class="sub">Nhật ký bảo trì xe máy · xác thực bằng blockchain</div></div></div>
+ <div class="actions"><span id="who" class="chip hide"></span><button class="btn ghost sm" id="wbtn">🦊 Kết nối MetaMask</button><span class="sub" id="wst"></span></div>
+</div></div>
 <div class="w">
-<header>
- <div><h1>🏍️ Moto Maintenance Chain</h1><div class="sub">Nhật ký bảo trì xe máy · SHA-256 neo trên Sepolia</div></div>
- <div style="text-align:right">
-  <button class="btn s" id="wbtn">Kết nối MetaMask</button><div class="sub" id="wst">Chưa kết nối</div>
-  <div class="sub" id="who"></div>
- </div>
-</header>
-<nav id="nav"></nav>
+<nav class="tabs" id="nav"></nav>
 
 <section id="look">
- <div class="c"><h2>Tra cứu theo biển số</h2>
-  <div class="row"><div><label>Biển số xe</label><input id="q" placeholder="VD: 59A1-123.45"></div><button class="btn" id="go">Tra cứu</button></div>
- </div>
+ <div class="hero"><h2>Tra cứu lịch sử xe máy</h2><p>Nhập biển số hoặc quét mã QR để kiểm tra lịch sử bảo trì và xác thực dữ liệu không bị chỉnh sửa, kể cả ODO.</p>
+  <div class="search"><input id="q" placeholder="VD: 59A1-123.45"><button class="btn" id="go">Tra cứu</button></div></div>
  <div id="res"></div>
 </section>
 
 <section id="login" class="hide">
- <div class="c" style="max-width:420px"><h2>Đăng nhập garage</h2>
-  <label>Tên đăng nhập</label><input id="l_u" autocomplete="username">
-  <label style="margin-top:8px">Mật khẩu</label><input id="l_p" type="password" autocomplete="current-password">
-  <div style="margin-top:10px"><button class="btn" id="l_go">Đăng nhập</button></div>
-  <div class="sub" id="l_msg" style="margin-top:8px"></div>
-  <p class="sub">Người mua không cần đăng nhập để tra cứu. Tài khoản garage được cấu hình trong file backend/.env.</p>
+ <div class="card" style="max-width:440px;margin:0 auto"><h3>Đăng nhập garage</h3><p class="sub">Người mua không cần đăng nhập để tra cứu. Tài khoản garage được cấu hình trong backend/.env.</p>
+  <div class="grid" style="grid-template-columns:1fr"><div><label>Tên đăng nhập</label><input id="l_u" autocomplete="username"></div>
+  <div><label>Mật khẩu</label><input id="l_p" type="password" autocomplete="current-password"></div></div>
+  <button class="btn" id="l_go">Đăng nhập</button><div class="msg bad-t" id="l_msg" style="margin-top:10px"></div>
  </div>
 </section>
 
 <section id="stats" class="hide">
  <div class="kpi" id="kpi"></div>
- <div class="c"><h2>Xe cần nhắc bảo dưỡng</h2><div id="alerts" class="sub"></div></div>
+ <div class="card"><h3>Xe cần nhắc bảo dưỡng</h3><div id="alerts" class="sub" style="margin-top:8px"></div></div>
  <div class="g2">
-  <div class="c"><h2>Số mốc theo tháng</h2><div class="cv"><canvas id="c_m"></canvas></div></div>
-  <div class="c"><h2>Chi phí theo tháng (VNĐ)</h2><div class="cv"><canvas id="c_c"></canvas></div></div>
-  <div class="c"><h2>Theo loại công việc</h2><div class="cv"><canvas id="c_t"></canvas></div></div>
+  <div class="card"><h3>Số mốc theo tháng</h3><div class="cv"><canvas id="c_m"></canvas></div></div>
+  <div class="card"><h3>Chi phí theo tháng (VNĐ)</h3><div class="cv"><canvas id="c_c"></canvas></div></div>
+  <div class="card"><h3>Theo loại công việc</h3><div class="cv"><canvas id="c_t"></canvas></div></div>
  </div>
 </section>
 
 <section id="add" class="hide">
- <div class="c"><h2>Thêm mốc bảo trì / sửa chữa</h2>
-  <div class="g">
-   <div><label>Biển số</label><input id="a_p"></div>
-   <div><label>Ngày</label><input id="a_d" type="date"></div>
-   <div><label>ODO (km)</label><input id="a_o" type="number" min="0"></div>
-   <div><label>Loại</label><select id="a_t"><option>Bảo dưỡng định kỳ</option><option>Sửa chữa</option><option>Thay nhớt</option><option>Thay phụ tùng</option><option>Tai nạn / va chạm</option></select></div>
+ <div class="card"><h3>1. Thông tin xe</h3><p class="sub">Lưu theo biển số, dùng chung cho mọi mốc bảo trì. Thông tin này hiển thị khi tra cứu.</p>
+  <div class="grid">
+   <div><label>Biển số *</label><input id="a_p" placeholder="59A1-123.45"></div>
+   <div><label>Hãng</label><input id="v_brand" placeholder="Honda"></div>
+   <div><label>Dòng xe</label><input id="v_model" placeholder="Wave Alpha"></div>
+   <div><label>Năm sản xuất</label><input id="v_year" inputmode="numeric" maxlength="4" placeholder="2019"></div>
+   <div><label>Màu</label><input id="v_color"></div>
+   <div><label>Số khung</label><input id="v_vin"></div>
+   <div><label>Số máy</label><input id="v_engine"></div>
+  </div>
+  <div class="row"><button class="btn ghost" id="v_save">Lưu thông tin xe</button><span class="msg" id="vmsg"></span></div>
+ </div>
+ <div class="card"><h3>2. Mốc bảo trì / sửa chữa</h3>
+  <div class="grid">
+   <div><label>Ngày *</label><input id="a_d" type="date"></div>
+   <div><label>ODO (km) *</label><input id="a_o" type="number" min="0"></div>
+   <div><label>Loại *</label><select id="a_t"><option>Bảo dưỡng định kỳ</option><option>Sửa chữa</option><option>Thay nhớt</option><option>Thay phụ tùng</option><option>Tai nạn / va chạm</option></select></div>
    <div><label>Chi phí (VNĐ)</label><input id="a_c" type="number" min="0"></div>
    <div><label>Garage (theo tài khoản)</label><input id="a_g" readonly></div>
   </div>
-  <div style="margin-top:10px"><label>Mô tả công việc</label><textarea id="a_x" rows="3"></textarea></div>
-  <div style="margin-top:10px"><button class="btn" id="save">Lưu vào CSDL &amp; tạo mã băm</button></div>
-  <div class="sub" id="amsg" style="margin-top:8px"></div>
+  <label>Mô tả công việc</label><textarea id="a_x" rows="3"></textarea>
+  <div class="file" style="margin-top:14px"><label>Ảnh hóa đơn / phiếu sửa chữa (tuỳ chọn)</label>
+   <input id="a_f" type="file" accept="image/*,application/pdf">
+   <div class="sub" id="a_fi" style="margin-top:6px">JPG, PNG, WEBP hoặc PDF, tối đa 3 MB. Mã SHA-256 của tệp được đưa vào mã băm của mốc, nên thay ảnh sau này sẽ bị phát hiện.</div></div>
+  <div class="row" style="margin-top:14px"><button class="btn" id="save">Lưu &amp; tạo mã băm</button><span class="msg" id="amsg"></span></div>
  </div>
 </section>
-
 </div>
-
 <div id="report"></div>
+
 <script>
 const $=id=>document.getElementById(id);
 const ABI=["function anchor(bytes32 h)","function records(bytes32) view returns (address garage,uint256 ts)"];
-let cfg={contract:"",chainId:11155111},signer=null,prov=null,curPlate="",me=null,tok="",tab="look",lastData=null,lastUrl="",lastQr="",charts={};
+let cfg={contract:"",chainId:11155111,serviceKm:2000,serviceMonths:6},signer=null,prov=null,curPlate="",me=null,tok="",tab="look",lastData=null,lastUrl="",lastQr="",charts={},pending=null;
 try{tok=localStorage.getItem("mmc_t")||""}catch(e){}
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt=n=>Number(n).toLocaleString("vi-VN");
-const canWrite=()=>!!me;
 async function api(u,o={}){
  o.headers=Object.assign({},o.headers||{},tok?{Authorization:"Bearer "+tok}:{});
  const r=await fetch(u,o),j=await r.json().catch(()=>({}));
@@ -115,21 +152,22 @@ async function api(u,o={}){
  return j;
 }
 const post=(u,b,m="POST")=>api(u,{method:m,headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
+const say=(id,t,ok)=>{const e=$(id);e.className="msg "+(ok?"ok-t":"bad-t");e.textContent=t};
 fetch("/api/config").then(r=>r.json()).then(c=>cfg=c).catch(()=>{});
 
 function setSession(t,u){
  tok=t;me=u;try{t?localStorage.setItem("mmc_t",t):localStorage.removeItem("mmc_t")}catch(e){}
- $("who").innerHTML=me?"👤 "+esc(me.username)+" ("+esc(me.garage_name)+') · <a href="#" id="lo">Đăng xuất</a>':"";
+ const w=$("who");w.classList.toggle("hide",!me);
+ w.innerHTML=me?"👤 "+esc(me.garage_name)+' · <a href="#" id="lo">Đăng xuất</a>':"";
  if(me)$("lo").onclick=e=>{e.preventDefault();setSession("",null);show("look")};
  $("a_g").value=me?me.garage_name||me.username:"";
  buildNav();if(!allowed(tab))show("look");
  if(curPlate&&$("res").innerHTML)look(curPlate);
 }
-const allowed=t=>t==="look"||(t==="login"&&!me)||(t==="add"&&canWrite())||(t==="stats"&&!!me);
+const allowed=t=>t==="look"||(t==="login"&&!me)||((t==="add"||t==="stats")&&!!me);
 function buildNav(){
- const t=[["look","Tra cứu / Xác thực"]];
- if(canWrite())t.push(["add","Ghi bảo trì"],["stats","Thống kê"]);
- if(!me)t.push(["login","Đăng nhập"]);
+ const t=[["look","🔎 Tra cứu"]];
+ if(me)t.push(["add","📝 Ghi bảo trì"],["stats","📊 Thống kê"]);else t.push(["login","🔑 Đăng nhập"]);
  $("nav").innerHTML=t.map(x=>'<button data-t="'+x[0]+'"'+(x[0]===tab?' class="on"':"")+">"+x[1]+"</button>").join("");
  $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>show(b.dataset.t));
 }
@@ -142,7 +180,7 @@ function show(t){
 $("l_go").onclick=async()=>{
  try{const j=await post("/api/login",{username:$("l_u").value,password:$("l_p").value});
   $("l_p").value="";$("l_msg").textContent="";setSession(j.token,j.user);show("add")}
- catch(e){$("l_msg").className="sub bad";$("l_msg").textContent=e.message}
+ catch(e){say("l_msg",e.message,false)}
 };
 $("l_p").onkeydown=e=>{if(e.key==="Enter")$("l_go").click()};
 
@@ -157,61 +195,83 @@ $("wbtn").onclick=async()=>{
  }catch(e){$("wst").textContent="Kết nối thất bại"}
 };
 
-$("save").onclick=async()=>{
- const m=$("amsg");
- try{
-  const j=await post("/api/records",{plate:$("a_p").value,date:$("a_d").value,odo:$("a_o").value,type:$("a_t").value,cost:$("a_c").value,description:$("a_x").value});
-  m.className="sub ok";m.textContent="Đã lưu. Mã băm: "+j.hash+" — vào Tra cứu để neo lên blockchain.";
- }catch(e){m.className="sub bad";m.textContent=e.message}
+// ---- Thong tin xe ----
+const VK=["brand","model","year","color","vin","engine"];
+$("a_p").onchange=async()=>{
+ const p=$("a_p").value.trim();if(!p)return;
+ try{const v=await api("/api/vehicles/"+encodeURIComponent(p)+"/info");VK.forEach(k=>$("v_"+k).value=v[k]||"")}catch(e){}
+};
+$("v_save").onclick=async()=>{
+ const b={};VK.forEach(k=>b[k]=$("v_"+k).value);
+ try{await post("/api/vehicles/"+encodeURIComponent($("a_p").value.trim())+"/info",b,"PUT");say("vmsg","Đã lưu thông tin xe.",true)}
+ catch(e){say("vmsg",e.message,false)}
 };
 
-async function contract(){
- if(!/^0x[0-9a-fA-F]{40}$/.test(cfg.contract))throw new Error("Chưa cấu hình CONTRACT_ADDRESS ở backend/.env");
- if(!signer)throw new Error("Hãy kết nối MetaMask (Sepolia)");
- if((await prov.getNetwork()).chainId!==11155111)throw new Error("Hãy chuyển MetaMask sang Sepolia");
- return new ethers.Contract(cfg.contract,ABI,signer);
+// ---- Anh hoa don ----
+const readFile=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
+async function prepFile(f){
+ if(f.type==="application/pdf"){if(f.size>3*1024*1024)throw new Error("PDF tối đa 3 MB");return readFile(f)}
+ if(!/^image\//.test(f.type))throw new Error("Chỉ nhận ảnh hoặc PDF");
+ const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error("Không đọc được ảnh"));i.src=URL.createObjectURL(f)});
+ const k=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement("canvas");
+ c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+ c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+ return c.toDataURL("image/jpeg",0.85);
 }
+$("a_f").onchange=async()=>{
+ const f=$("a_f").files[0];pending=null;if(!f)return;
+ try{const d=await prepFile(f);pending={data:d};$("a_fi").textContent="Đã chọn: "+f.name+" (~"+Math.round(d.length*0.75/1024)+" KB sau khi nén)"}
+ catch(e){$("a_f").value="";$("a_fi").textContent=e.message}
+};
+
+$("save").onclick=async()=>{
+ try{
+  const j=await post("/api/records",{plate:$("a_p").value,date:$("a_d").value,odo:$("a_o").value,type:$("a_t").value,cost:$("a_c").value,description:$("a_x").value,image:pending});
+  say("amsg","Đã lưu. Mã băm: "+j.hash+". Vào Tra cứu để neo lên blockchain.",true);
+  pending=null;$("a_f").value="";$("a_fi").textContent="Đã lưu kèm ảnh nếu có. Chọn tệp khác cho mốc tiếp theo.";
+ }catch(e){say("amsg",e.message,false)}
+};
 
 // ---- Bieu do / thong ke / PDF ----
 function mk(id,cfg){
  const el=$(id);if(!el||!window.Chart)return;
  if(charts[id])charts[id].destroy();
- Chart.defaults.color=getComputedStyle(document.body).color;
+ Chart.defaults.color=getComputedStyle(document.body).color;Chart.defaults.font.family="Inter,system-ui,sans-serif";
  charts[id]=new Chart(el,cfg);
 }
 function qrSvg(url){try{const q=qrcode(0,"M");q.addData(url);q.make();return q.createSvgTag(4)}catch(e){return ""}}
 async function loadStats(){
  try{
   const s=await api("/api/stats");
-  $("kpi").innerHTML=[["Số xe",s.vehicles],["Số mốc bảo trì",s.records],["Tổng chi phí",fmt(s.totalCost)+"đ"],["Đã neo on-chain",s.anchored+"/"+s.records],["Xe bất thường",s.issueVehicles]]
-   .map(x=>'<div><span class="sub">'+x[0]+"</span><b>"+x[1]+"</b></div>").join("");
-  $("alerts").innerHTML=s.alerts.length?s.alerts.map(a=>'<div style="margin:6px 0"><a href="#" data-p="'+esc(a.plate)+'"><b>'+esc(a.plate)+'</b></a> <span class="b '+(a.status==="due"?"bad":"warn")+'">'+(a.status==="due"?"Đã đến hạn":"Sắp đến hạn")+"</span> "+esc(a.text)+"</div>").join(""):"Không có xe nào cần nhắc.";
+  $("kpi").innerHTML=[["🏍️","Số xe",s.vehicles],["🧾","Số mốc bảo trì",s.records],["💰","Tổng chi phí",fmt(s.totalCost)+"đ"],["⛓️","Đã neo on-chain",s.anchored+"/"+s.records],["⚠️","Xe bất thường",s.issueVehicles]]
+   .map(x=>"<div><i>"+x[0]+'</i><div class="sub">'+x[1]+"</div><b>"+x[2]+"</b></div>").join("");
+  $("alerts").innerHTML=s.alerts.length?s.alerts.map(a=>'<div style="margin:8px 0"><a href="#" data-p="'+esc(a.plate)+'"><b>'+esc(a.plate)+'</b></a> <span class="pill '+(a.status==="due"?"bad":"warn")+'">'+(a.status==="due"?"Đã đến hạn":"Sắp đến hạn")+"</span> "+esc(a.text)+"</div>").join(""):"Không có xe nào cần nhắc.";
   $("alerts").querySelectorAll("[data-p]").forEach(a=>a.onclick=e=>{e.preventDefault();show("look");$("q").value=a.dataset.p;look(a.dataset.p)});
   const opt={maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}};
-  mk("c_m",{type:"bar",data:{labels:s.byMonth.map(x=>x.m),datasets:[{label:"Số mốc",data:s.byMonth.map(x=>x.c),backgroundColor:"#e8590c"}]},options:opt});
-  mk("c_c",{type:"bar",data:{labels:s.byMonth.map(x=>x.m),datasets:[{label:"Chi phí",data:s.byMonth.map(x=>x.s),backgroundColor:"#1a7f4b"}]},options:Object.assign({},opt,{scales:{y:{beginAtZero:true}}})});
-  mk("c_t",{type:"doughnut",data:{labels:s.byType.map(x=>x.type),datasets:[{data:s.byType.map(x=>x.c),backgroundColor:["#e8590c","#1a7f4b","#3b82f6","#b26a00","#8b5cf6","#c62828"]}]},options:{maintainAspectRatio:false}});
- }catch(e){$("kpi").innerHTML='<div class="bad">'+esc(e.message)+"</div>"}
+  mk("c_m",{type:"bar",data:{labels:s.byMonth.map(x=>x.m),datasets:[{data:s.byMonth.map(x=>x.c),backgroundColor:"#f97316",borderRadius:6}]},options:opt});
+  mk("c_c",{type:"bar",data:{labels:s.byMonth.map(x=>x.m),datasets:[{data:s.byMonth.map(x=>x.s),backgroundColor:"#22c55e",borderRadius:6}]},options:Object.assign({},opt,{scales:{y:{beginAtZero:true}}})});
+  mk("c_t",{type:"doughnut",data:{labels:s.byType.map(x=>x.type),datasets:[{data:s.byType.map(x=>x.c),backgroundColor:["#f97316","#22c55e","#3b82f6","#eab308","#8b5cf6","#ef4444"],borderWidth:0}]},options:{maintainAspectRatio:false,cutout:"62%"}});
+ }catch(e){$("kpi").innerHTML='<div class="bad-t">'+esc(e.message)+"</div>"}
 }
 function drawOdo(d){
- mk("c_o",{type:"line",data:{labels:d.records.map(r=>r.date),datasets:[{label:"ODO (km)",data:d.records.map(r=>r.odo),borderColor:"#e8590c",backgroundColor:"#e8590c",tension:.2,pointRadius:5,pointBackgroundColor:d.records.map(r=>r.checks.odo?"#e8590c":"#c62828")}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+ mk("c_o",{type:"line",data:{labels:d.records.map(r=>r.date),datasets:[{data:d.records.map(r=>r.odo),borderColor:"#f97316",backgroundColor:"rgba(249,115,22,.15)",fill:true,tension:.25,pointRadius:6,pointBackgroundColor:d.records.map(r=>r.checks.odo?"#f97316":"#ef4444")}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
 }
 const RM={due:["bad","Đã đến hạn"],soon:["warn","Sắp đến hạn"],ok:["ok","Chưa đến hạn"]};
+function failed(c){return [c.hash===false&&"dữ liệu bị sửa",c.chain===false&&"chuỗi đứt",c.odo===false&&"ODO giảm",c.image===false&&"ảnh hóa đơn bị thay đổi"].filter(Boolean)}
 function exportPdf(){
  const d=lastData;if(!d)return;
- const rm=d.reminder;
- const rows=d.records.map((r,i)=>{
-  const c=r.checks,bad=[!c.hash&&"dữ liệu bị sửa",!c.chain&&"chuỗi đứt",!c.odo&&"ODO giảm"].filter(Boolean);
+ const rm=d.reminder,v=d.vehicle;
+ const rows=d.records.map((r,i)=>{const bad=failed(r.checks);
   return "<tr><td>"+(i+1)+"</td><td>"+esc(r.date)+"</td><td>"+fmt(r.odo)+" km</td><td><b>"+esc(r.type)+"</b><br>"+esc(r.description)+"</td><td>"+esc(r.garage)+"</td><td>"+fmt(r.cost)+"đ</td><td>"+(bad.length?"Bất thường: "+bad.join(", "):"Hợp lệ")+
-   '</td><td class="h">'+r.hash+"<br>"+(r.tx_hash?"Giao dịch Sepolia: "+r.tx_hash:"Chưa neo on-chain")+"</td></tr>"}).join("");
- $("report").innerHTML='<h1 style="margin:0 0 4px">Báo cáo lịch sử bảo trì xe '+esc(d.plate)+"</h1>"+
-  "<p>Ngày xuất: "+new Date().toLocaleString("vi-VN")+" · Hệ thống Moto Maintenance Chain</p>"+
+   '</td><td class="h">'+r.hash+"<br>"+(r.tx_hash?"Giao dịch Sepolia: "+r.tx_hash:"Chưa neo on-chain")+(r.image_hash?"<br>Hóa đơn SHA-256: "+r.image_hash:"")+"</td></tr>"}).join("");
+ const vi=v?[["Hãng",v.brand],["Dòng xe",v.model],["Năm SX",v.year],["Màu",v.color],["Số khung",v.vin],["Số máy",v.engine]].filter(x=>x[1]).map(x=>x[0]+": <b>"+esc(x[1])+"</b>").join(" · "):"";
+ $("report").innerHTML='<h1 style="margin:0 0 4px;font-size:22px">Báo cáo lịch sử bảo trì xe '+esc(d.plate)+"</h1>"+
+  "<p>Ngày xuất: "+new Date().toLocaleString("vi-VN")+" · Hệ thống Moto Maintenance Chain</p>"+(vi?"<p>"+vi+"</p>":"")+
   "<p><b>Kết luận:</b> "+(d.issues?"Phát hiện "+d.issues+" mốc bất thường":"Lịch sử toàn vẹn, ODO nhất quán")+" · "+d.total+" mốc · ODO ghi nhận gần nhất "+fmt(d.maxOdo)+" km</p>"+
   (rm?"<p><b>Nhắc bảo dưỡng ("+RM[rm.status][1]+"):</b> "+esc(rm.text)+"</p>":"")+
   "<table><thead><tr><th>#</th><th>Ngày</th><th>ODO</th><th>Công việc</th><th>Garage</th><th>Chi phí</th><th>Kiểm tra</th><th>Mã băm SHA-256 / Giao dịch</th></tr></thead><tbody>"+rows+"</tbody></table>"+
-  '<p style="margin-top:12px">Smart Contract (Sepolia): <span class="h">'+esc(cfg.contract||"chưa cấu hình")+"</span><br>Xác thực online: <span class=\"h\">"+esc(lastUrl)+'</span></p><div style="background:#fff;display:inline-block;padding:6px">'+lastQr+"</div>";
- const old=document.title;document.title="BaoCao_"+d.plate;
- window.print();document.title=old;
+  '<p style="margin-top:12px">Smart Contract (Sepolia): <span class="h">'+esc(cfg.contract||"chưa cấu hình")+'</span><br>Xác thực online: <span class="h">'+esc(lastUrl)+'</span></p><div style="background:#fff;display:inline-block;padding:6px">'+lastQr+"</div>";
+ const old=document.title;document.title="BaoCao_"+d.plate;window.print();document.title=old;
 }
 
 // ---- Tra cuu ----
@@ -219,28 +279,39 @@ $("go").onclick=()=>look($("q").value);
 $("q").onkeydown=e=>{if(e.key==="Enter")look($("q").value)};
 async function look(raw){
  const box=$("res");if(!String(raw).trim())return;
- let d;try{d=await api("/api/vehicles/"+encodeURIComponent(raw))}catch(e){box.innerHTML='<div class="c">'+esc(e.message)+"</div>";return}
+ let d;try{d=await api("/api/vehicles/"+encodeURIComponent(raw))}catch(e){box.innerHTML='<div class="card">'+esc(e.message)+"</div>";return}
  curPlate=d.plate;
- const chk=(ok,y,n)=>'<span class="b '+(ok?"ok":"bad")+'">'+(ok?y:n)+"</span>";
+ const pill=(ok,y,n)=>'<span class="pill '+(ok?"ok":"bad")+'">'+(ok?"✓ "+y:"✗ "+n)+"</span>";
  const items=d.records.map(r=>{
-  const mine=!!me;
-  return '<div class="it"><b>'+esc(r.date)+" · "+fmt(r.odo)+" km</b> — "+esc(r.type)+
-  "<div>"+esc(r.description)+(r.garage?' <span class="sub">@ '+esc(r.garage)+"</span>":"")+(r.cost?' <span class="sub">· '+fmt(r.cost)+"đ</span>":"")+"</div>"+
-  chk(r.checks.hash,"Dữ liệu khớp mã băm","Dữ liệu bị sửa")+chk(r.checks.chain,"Chuỗi liên kết đúng","Chuỗi đứt")+chk(r.checks.odo,"ODO hợp lệ","ODO giảm - nghi gian lận")+
-  '<span class="b warn" id="ch'+r.id+'">'+(r.tx_hash?"Đã neo":"Chưa kiểm tra on-chain")+"</span>"+
-  '<div class="h">'+r.hash+'</div><button class="btn s" data-v="'+r.id+'" data-h="'+r.hash+'">Xác thực on-chain</button> '+
-  (mine&&!r.tx_hash?'<button class="btn s" data-a="'+r.id+'" data-h="'+r.hash+'">Neo lên Sepolia</button>':"")+
-  (r.tx_hash?' <a class="sub" target="_blank" rel="noopener" href="https://sepolia.etherscan.io/tx/'+r.tx_hash+'">Etherscan</a>':"")+"</div>"}).join("");
- const url=location.origin+location.pathname+"#xe-"+d.plate,qr=qrSvg(url);
- lastData=d;lastUrl=url;lastQr=qr;
- const rm=d.reminder,rmHtml=rm?'<div class="c"><h2>Nhắc bảo dưỡng định kỳ</h2><span class="b '+RM[rm.status][0]+'">'+RM[rm.status][1]+"</span> "+esc(rm.text)+
-  '<div class="sub">Quy tắc: mỗi '+fmt(cfg.serviceKm||2000)+" km hoặc "+(cfg.serviceMonths||6)+" tháng kể từ lần bảo dưỡng gần nhất ("+esc(rm.base.date)+", "+fmt(rm.base.odo)+" km), dựa trên ODO ghi nhận gần nhất.</div></div>":"";
- box.innerHTML='<div class="c"><h2>Xe '+esc(d.plate)+" · "+d.total+" mốc · "+fmt(d.maxOdo)+' km</h2><b class="'+(d.issues?"bad":"ok")+'">'+
-  (d.issues?"⚠ Phát hiện "+d.issues+" mốc bất thường":"✔ Lịch sử toàn vẹn, ODO nhất quán")+'</b> <button class="btn s" id="pdfb" style="float:right">Xuất báo cáo PDF</button></div>'+rmHtml+'<div class="c"><h2>Biểu đồ ODO theo thời gian</h2><div class="cv"><canvas id="c_o"></canvas></div></div><div class="c"><div class="tl">'+items+
-  '</div></div><div class="c"><h2>Mã QR tra cứu</h2><div style="background:#fff;display:inline-block;padding:8px;border-radius:8px">'+qr+'</div></div>';
+  const c=r.checks,x=failed(c).length>0,mine=!!me,isPdf=/\.pdf$/.test(r.image_file||"");
+  const inv=r.image_file?'<a class="thumb" target="_blank" rel="noopener" href="/uploads/'+esc(r.image_file)+'">'+(isPdf?"<span style=\"font-size:34px\">📄</span>":'<img alt="Hóa đơn" src="/uploads/'+esc(r.image_file)+'">')+"<span>Xem hóa đơn đính kèm</span></a>":"";
+  return '<div class="it'+(x?" x":"")+'"><div class="itc"><div class="ith"><b>'+esc(r.date)+'</b><span class="tag">'+esc(r.type)+'</span><span class="odo">'+fmt(r.odo)+" km</span></div>"+
+  (r.description?"<div>"+esc(r.description)+"</div>":"")+'<div class="sub">'+esc(r.garage)+(r.cost?" · "+fmt(r.cost)+"đ":"")+"</div>"+inv+
+  "<div>"+pill(c.hash,"Dữ liệu khớp mã băm","Dữ liệu bị sửa")+pill(c.chain,"Chuỗi liên kết đúng","Chuỗi đứt")+pill(c.odo,"ODO hợp lệ","ODO giảm, nghi gian lận")+
+  (c.image!==undefined?pill(c.image,"Ảnh khớp mã băm","Ảnh bị thay đổi"):"")+'<span class="pill warn" id="ch'+r.id+'">'+(r.tx_hash?"Đã neo":"Chưa kiểm tra on-chain")+"</span></div>"+
+  '<div class="h">'+r.hash+'</div><div class="acts"><button class="btn ghost sm" data-v="'+r.id+'" data-h="'+r.hash+'">Xác thực on-chain</button>'+
+  (mine&&!r.tx_hash?'<button class="btn sm" data-a="'+r.id+'" data-h="'+r.hash+'">Neo lên Sepolia</button>':"")+
+  (r.tx_hash?'<a class="sub" target="_blank" rel="noopener" href="https://sepolia.etherscan.io/tx/'+r.tx_hash+'">Xem trên Etherscan ↗</a>':"")+"</div></div></div>"}).join("");
+ const url=location.origin+location.pathname+"#xe-"+d.plate,qr=qrSvg(url);lastData=d;lastUrl=url;lastQr=qr;
+ const v=d.vehicle,vk=v?[["Hãng",v.brand],["Dòng xe",v.model],["Năm SX",v.year],["Màu",v.color],["Số khung",v.vin],["Số máy",v.engine]].filter(x=>x[1]):[];
+ const vehHtml='<div class="card"><span class="plate">'+esc(d.plate)+"</span>"+(vk.length?'<div class="kv">'+vk.map(x=>"<span>"+x[0]+"</span><span>"+esc(x[1])+"</span>").join("")+"</div>":'<div class="sub">Chưa có thông tin xe.</div>')+"</div>";
+ const rm=d.reminder,rmHtml=rm?'<div class="card"><h3>Nhắc bảo dưỡng định kỳ</h3><div style="margin:10px 0"><span class="pill '+RM[rm.status][0]+'">'+RM[rm.status][1]+"</span></div><div>"+esc(rm.text)+
+  '</div><div class="sub" style="margin-top:8px">Quy tắc: mỗi '+fmt(cfg.serviceKm||2000)+" km hoặc "+(cfg.serviceMonths||6)+" tháng kể từ lần bảo dưỡng gần nhất ("+esc(rm.base.date)+", "+fmt(rm.base.odo)+" km).</div></div>":"";
+ box.innerHTML='<div class="banner '+(d.issues?"bad":"ok")+'"><div class="bi">'+(d.issues?"⚠️":"✅")+"</div><div><b>"+(d.issues?"Phát hiện "+d.issues+" mốc bất thường":"Lịch sử toàn vẹn, ODO nhất quán")+
+  '</b><div class="sub">'+d.total+" mốc bảo trì · ODO ghi nhận gần nhất "+fmt(d.maxOdo)+' km</div></div><button class="btn ghost sm" id="pdfb">⬇ Xuất báo cáo PDF</button></div>'+
+  '<div class="g2" style="margin-bottom:16px">'+vehHtml+rmHtml+"</div>"+
+  '<div class="card"><h3>ODO theo thời gian</h3><div class="cv"><canvas id="c_o"></canvas></div></div>'+
+  '<div class="card"><h3 style="margin-bottom:14px">Lịch sử bảo trì</h3><div class="tl">'+items+"</div></div>"+
+  '<div class="card"><h3>Mã QR tra cứu</h3><div style="background:#fff;display:inline-block;padding:10px;border-radius:12px;margin-top:10px">'+qr+"</div></div>";
  drawOdo(d);$("pdfb").onclick=exportPdf;
  box.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>chain(b.dataset.v,b.dataset.h,false));
  box.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>chain(b.dataset.a,b.dataset.h,true));
+}
+async function contract(){
+ if(!/^0x[0-9a-fA-F]{40}$/.test(cfg.contract))throw new Error("Chưa cấu hình CONTRACT_ADDRESS ở backend/.env");
+ if(!signer)throw new Error("Hãy kết nối MetaMask (Sepolia)");
+ if((await prov.getNetwork()).chainId!==11155111)throw new Error("Hãy chuyển MetaMask sang Sepolia");
+ return new ethers.Contract(cfg.contract,ABI,signer);
 }
 async function chain(id,hash,write){
  const el=$("ch"+id);
@@ -251,10 +322,10 @@ async function chain(id,hash,write){
    await post("/api/records/"+id+"/tx",{tx:tx.hash},"PATCH");look(curPlate);
   }else{
    const o=await c.records(hash);
-   if(o.ts.isZero()){el.className="b bad";el.textContent="Không có trên blockchain"}
-   else{el.className="b ok";el.textContent="Đã neo "+new Date(o.ts.toNumber()*1000).toLocaleString("vi-VN")+" bởi "+o.garage.slice(0,6)+"…"}
+   if(o.ts.isZero()){el.className="pill bad";el.textContent="✗ Không có trên blockchain"}
+   else{el.className="pill ok";el.textContent="✓ Đã neo "+new Date(o.ts.toNumber()*1000).toLocaleString("vi-VN")+" bởi "+o.garage.slice(0,6)+"…"}
   }
- }catch(e){el.className="b bad";el.textContent=(e.reason||e.message||"Lỗi").slice(0,90)}
+ }catch(e){el.className="pill bad";el.textContent=(e.reason||e.message||"Lỗi").slice(0,90)}
 }
 
 (async()=>{
