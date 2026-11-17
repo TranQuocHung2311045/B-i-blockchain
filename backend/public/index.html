@@ -98,6 +98,14 @@ label{font-size:11.5px;font-weight:700;color:var(--mut);display:block;margin-bot
 .feat>div:hover{transform:translateY(-4px);box-shadow:var(--shh)}.feat i{font-style:normal;font-size:28px;display:inline-grid;place-items:center;width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--infobg),var(--okbg));margin-bottom:12px}
 .feat b{display:block;font-size:15px;margin-bottom:4px}.feat span{color:var(--mut);font-size:13.5px}
 .sk{height:96px;border-radius:var(--r);margin-bottom:18px;background:linear-gradient(90deg,var(--sf) 0,var(--sf2) 100px,var(--sf) 200px) 0/400px;animation:sh 1.2s infinite linear;border:1px solid var(--line)}
+.seg{display:flex;gap:4px;background:var(--sf2);border:1px solid var(--line);border-radius:12px;padding:4px}
+.seg button{flex:1;border:0;background:transparent;color:var(--mut);padding:9px 12px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;transition:.15s}
+.seg button.on{background:var(--sf);color:var(--brand);box-shadow:var(--sh)}
+.car{background:var(--sf2);border:1px solid var(--line);border-radius:15px;padding:16px;transition:border-color .2s,transform .2s}.car:hover{border-color:var(--brand);transform:translateY(-2px)}
+.remrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.remrow:last-child{border:0}.remrow a{color:var(--brand);text-decoration:none}
+.codebox{margin-top:12px;padding:12px 16px;border:1px dashed var(--brand);border-radius:12px;background:var(--warnbg)}
+.code{font:800 24px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.14em;color:var(--brand)}
+#c_tog{text-decoration:none;color:var(--brand);font-weight:600}
 footer{text-align:center;color:var(--mut);font-size:12.5px;padding:26px 0 34px}
 .hide{display:none}
 #report{display:none}
@@ -130,10 +138,46 @@ footer{text-align:center;color:var(--mut);font-size:12.5px;padding:26px 0 34px}
 </section>
 
 <section id="login" class="hide">
- <div class="card" style="max-width:440px;margin:0 auto"><h3>Đăng nhập garage</h3><p class="sub">Người mua không cần đăng nhập để tra cứu. Tài khoản garage được cấu hình trong backend/.env.</p>
-  <div class="grid" style="grid-template-columns:1fr"><div><label>Tên đăng nhập</label><input id="l_u" autocomplete="username"></div>
-  <div><label>Mật khẩu</label><input id="l_p" type="password" autocomplete="current-password"></div></div>
-  <button class="btn" id="l_go">Đăng nhập</button><div class="msg bad-t" id="l_msg" style="margin-top:10px"></div>
+ <div class="card" style="max-width:480px;margin:0 auto">
+  <div class="seg" id="lseg"><button class="on" data-m="cl">👤 Khách hàng</button><button data-m="gl">🔧 Garage</button></div>
+  <div id="f_cl">
+   <p class="sub" style="margin-top:16px">Đăng nhập để xem lịch sử bảo dưỡng và lịch nhắc cho xe của bạn. Tra cứu xe thì không cần tài khoản.</p>
+   <div class="grid" style="grid-template-columns:1fr">
+    <div id="c_reg" class="hide"><div style="margin-bottom:16px"><label>Họ và tên</label><input id="c_n" autocomplete="name"></div><div><label>Số điện thoại (tuỳ chọn)</label><input id="c_t" autocomplete="tel"></div></div>
+    <div><label>Email</label><input id="c_e" type="email" autocomplete="email"></div>
+    <div><label>Mật khẩu</label><input id="c_p" type="password" autocomplete="current-password" placeholder="Tối thiểu 8 ký tự"></div>
+   </div>
+   <div class="row"><button class="btn" id="c_go">Đăng nhập</button><a href="#" id="c_tog">Chưa có tài khoản? Đăng ký</a></div>
+   <div class="msg" id="c_msg" style="margin-top:10px"></div>
+  </div>
+  <div id="f_gl" class="hide">
+   <p class="sub" style="margin-top:16px">Dành cho garage. Tài khoản được cấu hình trong backend/.env.</p>
+   <div class="grid" style="grid-template-columns:1fr"><div><label>Tên đăng nhập</label><input id="l_u" autocomplete="username"></div>
+   <div><label>Mật khẩu</label><input id="l_p" type="password" autocomplete="current-password"></div></div>
+   <button class="btn" id="l_go">Đăng nhập</button><div class="msg bad-t" id="l_msg" style="margin-top:10px"></div>
+  </div>
+ </div>
+</section>
+
+<section id="mycars" class="hide">
+ <div id="clist">
+  <div class="card"><h3>🔔 Lịch nhắc sắp tới</h3><div id="crem" style="margin-top:8px"></div></div>
+  <div class="card"><h3 style="margin-bottom:14px">🏍️ Xe của tôi</h3><div id="cars" class="g2"></div></div>
+  <div class="card"><h3>➕ Liên kết xe mới</h3><p class="sub">Garage sẽ cấp cho bạn một mã liên kết khi giao xe hoặc sau khi bảo dưỡng. Nhập biển số và mã đó để thêm xe vào tài khoản.</p>
+   <div class="grid"><div><label>Biển số</label><input id="k_p" placeholder="59A1-123.45"></div><div><label>Mã liên kết</label><input id="k_c" placeholder="XXXX-XXXX"></div></div>
+   <div class="row"><button class="btn" id="k_go">Liên kết xe</button><span class="msg" id="k_msg"></span></div></div>
+ </div>
+ <div id="cview" class="hide"><button class="btn ghost sm" id="cback" style="margin-bottom:16px">← Quay lại danh sách xe</button><div id="cres"></div></div>
+</section>
+
+<section id="profile" class="hide">
+ <div class="g2">
+  <div class="card"><h3>Thông tin cá nhân</h3>
+   <div class="grid" style="grid-template-columns:1fr"><div><label>Email</label><input id="p_e" readonly></div><div><label>Họ và tên</label><input id="p_n"></div><div><label>Số điện thoại</label><input id="p_t"></div></div>
+   <div class="row"><button class="btn" id="p_save">Lưu thay đổi</button><span class="msg" id="p_msg"></span></div></div>
+  <div class="card"><h3>Đổi mật khẩu</h3>
+   <div class="grid" style="grid-template-columns:1fr"><div><label>Mật khẩu hiện tại</label><input id="p_o" type="password" autocomplete="current-password"></div><div><label>Mật khẩu mới</label><input id="p_w" type="password" autocomplete="new-password" placeholder="Tối thiểu 8 ký tự"></div></div>
+   <div class="row"><button class="btn" id="p_pw">Đổi mật khẩu</button><span class="msg" id="p_msg2"></span></div></div>
  </div>
 </section>
 
@@ -158,7 +202,8 @@ footer{text-align:center;color:var(--mut);font-size:12.5px;padding:26px 0 34px}
    <div><label>Số khung</label><input id="v_vin"></div>
    <div><label>Số máy</label><input id="v_engine"></div>
   </div>
-  <div class="row"><button class="btn ghost" id="v_save">Lưu thông tin xe</button><span class="msg" id="vmsg"></span></div>
+  <div class="row"><button class="btn ghost" id="v_save">Lưu thông tin xe</button><button class="btn ghost" id="v_code">🔗 Tạo mã liên kết cho khách</button><span class="msg" id="vmsg"></span></div>
+  <div id="v_codebox" class="codebox hide"></div>
  </div>
  <div class="card"><h3>2. Mốc bảo trì / sửa chữa</h3>
   <div class="grid">
@@ -199,25 +244,48 @@ fetch("/api/config").then(r=>r.json()).then(c=>cfg=c).catch(()=>{});
 function setSession(t,u){
  tok=t;me=u;try{t?localStorage.setItem("mmc_t",t):localStorage.removeItem("mmc_t")}catch(e){}
  const w=$("who");w.classList.toggle("hide",!me);
- w.innerHTML=me?"👤 "+esc(me.garage_name)+' · <a href="#" id="lo">Đăng xuất</a>':"";
+ w.innerHTML=me?"👤 "+esc(me.role==="customer"?me.full_name:me.garage_name)+' · <a href="#" id="lo">Đăng xuất</a>':"";
  if(me)$("lo").onclick=e=>{e.preventDefault();setSession("",null);show("look")};
- $("a_g").value=me?me.garage_name||me.username:"";
+ $("a_g").value=me&&me.role==="garage"?me.garage_name||me.username:"";
  buildNav();if(!allowed(tab))show("look");
  if(curPlate&&$("res").innerHTML)look(curPlate);
 }
-const allowed=t=>t==="look"||(t==="login"&&!me)||((t==="add"||t==="stats")&&!!me);
+const isG=()=>!!me&&me.role==="garage",isC=()=>!!me&&me.role==="customer";
+const allowed=t=>t==="look"||(t==="login"&&!me)||((t==="add"||t==="stats")&&isG())||((t==="mycars"||t==="profile")&&isC());
 function buildNav(){
  const t=[["look","🔎 Tra cứu"]];
- if(me)t.push(["add","📝 Ghi bảo trì"],["stats","📊 Thống kê"]);else t.push(["login","🔑 Đăng nhập"]);
+ if(isG())t.push(["add","📝 Ghi bảo trì"],["stats","📊 Thống kê"]);
+ else if(isC())t.push(["mycars","🏍️ Xe của tôi"],["profile","👤 Tài khoản"]);
+ else t.push(["login","🔑 Đăng nhập"]);
  $("nav").innerHTML=t.map(x=>'<button data-t="'+x[0]+'"'+(x[0]===tab?' class="on"':"")+">"+x[1]+"</button>").join("");
  $("nav").querySelectorAll("button").forEach(b=>b.onclick=()=>show(b.dataset.t));
 }
 function show(t){
  if(!allowed(t))t="look";tab=t;
- ["look","login","add","stats"].forEach(x=>$(x).classList.toggle("hide",x!==t));
- buildNav();if(t==="stats")loadStats();
+ ["look","login","add","stats","mycars","profile"].forEach(x=>$(x).classList.toggle("hide",x!==t));
+ buildNav();
+ if(t==="stats")loadStats();
+ if(t==="mycars"){closeCar();loadCars()}
+ if(t==="profile")fillProfile();
 }
 
+// ---- Dang nhap: khach hang / garage ----
+document.querySelectorAll("#lseg button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll("#lseg button").forEach(x=>x.classList.toggle("on",x===b));
+ $("f_cl").classList.toggle("hide",b.dataset.m!=="cl");$("f_gl").classList.toggle("hide",b.dataset.m!=="gl");
+});
+let regMode=false;
+function setReg(on){regMode=on;$("c_reg").classList.toggle("hide",!on);$("c_go").textContent=on?"Tạo tài khoản":"Đăng nhập";
+ $("c_tog").textContent=on?"Đã có tài khoản? Đăng nhập":"Chưa có tài khoản? Đăng ký";$("c_msg").textContent="";$("c_p").autocomplete=on?"new-password":"current-password"}
+$("c_tog").onclick=e=>{e.preventDefault();setReg(!regMode)};
+$("c_go").onclick=async()=>{
+ try{
+  const j=regMode?await post("/api/customers/register",{email:$("c_e").value,password:$("c_p").value,full_name:$("c_n").value,phone:$("c_t").value})
+   :await post("/api/customers/login",{email:$("c_e").value,password:$("c_p").value});
+  $("c_p").value="";setSession(j.token,j.user);show("mycars");
+ }catch(e){say("c_msg",e.message,false)}
+};
+$("c_p").onkeydown=e=>{if(e.key==="Enter")$("c_go").click()};
 $("l_go").onclick=async()=>{
  try{const j=await post("/api/login",{username:$("l_u").value,password:$("l_p").value});
   $("l_p").value="";$("l_msg").textContent="";setSession(j.token,j.user);show("add")}
@@ -246,6 +314,13 @@ $("v_save").onclick=async()=>{
  const b={};VK.forEach(k=>b[k]=$("v_"+k).value);
  try{await post("/api/vehicles/"+encodeURIComponent($("a_p").value.trim())+"/info",b,"PUT");say("vmsg","Đã lưu thông tin xe.",true)}
  catch(e){say("vmsg",e.message,false)}
+};
+
+$("v_code").onclick=async()=>{
+ try{const j=await post("/api/vehicles/"+encodeURIComponent($("a_p").value.trim())+"/claim-code",{});
+  const b=$("v_codebox");b.classList.remove("hide");
+  b.innerHTML='Mã liên kết cho khách: <span class="code">'+esc(j.code)+'</span><div class="sub">Dùng 1 lần, hiệu lực đến '+esc(j.expires)+'. Khách đăng nhập, vào "Xe của tôi" và nhập biển số cùng mã này. Tạo mã mới sẽ vô hiệu mã cũ; khi xe được bán, mã mới sẽ chuyển xe sang chủ mới.</div>';
+ }catch(e){say("vmsg",e.message,false)}
 };
 
 // ---- Anh hoa don ----
@@ -315,17 +390,67 @@ function exportPdf(){
  const old=document.title;document.title="BaoCao_"+d.plate;window.print();document.title=old;
 }
 
+// ---- Khach hang ----
+const RMS={due:["bad","Đã đến hạn"],soon:["warn","Sắp đến hạn"],ok:["ok","Chưa đến hạn"],done:["info","Đã xong"]};
+const pl=s=>'<span class="pill '+RMS[s][0]+'">'+RMS[s][1]+"</span>";
+function closeCar(){$("cview").classList.add("hide");$("clist").classList.remove("hide");$("cres").innerHTML=""}
+async function loadCars(){
+ try{
+  const [cars,rem]=await Promise.all([api("/api/customers/vehicles"),api("/api/customers/reminders")]);
+  $("crem").innerHTML=rem.length?rem.map(r=>'<div class="remrow"><div><a href="#" data-o="'+esc(r.plate)+'"><b>'+esc(r.plate)+"</b></a> · "+esc(r.title)+'<div class="sub">'+esc(r.text)+"</div></div>"+pl(r.status)+"</div>").join(""):'<div class="sub">Chưa có lịch nhắc. Hãy liên kết xe để bắt đầu.</div>';
+  $("cars").innerHTML=cars.length?cars.map(c=>{const v=c.vehicle||{},nm=[v.brand,v.model,v.year].filter(Boolean).join(" ");
+   return '<div class="car"><span class="plate" style="font-size:18px">'+esc(c.plate)+'</span><div style="margin:10px 0 2px"><b>'+esc(nm||"Chưa có thông tin xe")+"</b></div>"+
+    '<div class="sub">ODO '+fmt(c.maxOdo)+" km · "+c.total+" mốc"+(c.last?"<br>Gần nhất: "+esc(c.last.date)+" · "+esc(c.last.type):"")+"</div>"+
+    '<div style="margin-top:8px">'+(c.reminder?pl(c.reminder.status):"")+(c.issues?'<span class="pill bad">⚠ Bất thường</span>':'<span class="pill ok">✓ Toàn vẹn</span>')+"</div>"+
+    '<div class="acts" style="margin-top:12px"><button class="btn sm" data-o="'+esc(c.plate)+'">Xem chi tiết</button><button class="btn ghost sm" data-u="'+esc(c.plate)+'">Hủy liên kết</button></div></div>'}).join(""):'<div class="sub">Bạn chưa liên kết xe nào.</div>';
+  document.querySelectorAll("#crem [data-o],#cars [data-o]").forEach(a=>a.onclick=e=>{e.preventDefault();openCar(a.dataset.o)});
+  document.querySelectorAll("#cars [data-u]").forEach(b=>b.onclick=async()=>{
+   if(confirm("Hủy liên kết xe "+b.dataset.u+"? Các lịch nhắc riêng của bạn cho xe này sẽ bị xóa.")){try{await api("/api/customers/vehicles/"+encodeURIComponent(b.dataset.u),{method:"DELETE"});loadCars()}catch(e){alert(e.message)}}});
+ }catch(e){$("cars").innerHTML='<div class="bad-t">'+esc(e.message)+"</div>"}
+}
+$("k_go").onclick=async()=>{
+ try{await post("/api/customers/vehicles/claim",{plate:$("k_p").value,code:$("k_c").value});$("k_p").value="";$("k_c").value="";say("k_msg","Đã liên kết xe thành công.",true);loadCars()}
+ catch(e){say("k_msg",e.message,false)}
+};
+function openCar(plate){
+ $("clist").classList.add("hide");$("cview").classList.remove("hide");window.scrollTo({top:0,behavior:"smooth"});
+ const u="/api/customers/vehicles/"+encodeURIComponent(plate);
+ look(plate,{box:"cres",url:u,extra:custExtra,after:d=>bindExtra(d,u)});
+}
+$("cback").onclick=()=>{closeCar();loadCars()};
+function custExtra(d){
+ const R=d.customReminders||[],rm=d.reminder;
+ const list=R.length?R.map(r=>'<div class="remrow"><div><b>'+esc(r.title)+"</b> "+pl(r.status)+'<div class="sub">'+esc(r.text)+(r.note?" · "+esc(r.note):"")+'</div></div><div class="acts"><button class="btn ghost sm" data-rd="'+r.id+'" data-dv="'+(r.done?0:1)+'">'+(r.done?"Mở lại":"✓ Xong")+'</button><button class="btn ghost sm" data-rx="'+r.id+'">🗑</button></div></div>').join(""):'<div class="sub">Chưa có lịch nhắc riêng.</div>';
+ return '<div class="g2" style="margin-bottom:18px"><div class="card"><h3>⚙️ Chu kỳ bảo dưỡng định kỳ</h3><p class="sub">Đến hạn khi đạt số km hoặc số tháng, tùy cái nào đến trước, tính từ lần bảo dưỡng gần nhất.</p>'+
+ '<div class="grid"><div><label>Mỗi (km)</label><input id="pf_km" type="number" min="500" max="20000" value="'+rm.km+'"></div><div><label>Hoặc mỗi (tháng)</label><input id="pf_mo" type="number" min="1" max="24" value="'+rm.months+'"></div></div>'+
+ '<div class="row"><button class="btn ghost sm" id="pf_save">Lưu chu kỳ</button><span class="msg" id="pf_msg"></span></div></div>'+
+ '<div class="card"><h3>🔔 Lịch nhắc của tôi</h3><div style="margin:10px 0">'+list+"</div>"+
+ '<div class="grid" style="margin:8px 0"><div><label>Nhắc việc gì</label><input id="r_t" placeholder="Đăng kiểm, thay lốp, bảo hiểm..."></div><div><label>Ngày hết hạn</label><input id="r_d" type="date"></div><div><label>Hoặc mốc ODO (km)</label><input id="r_o" type="number" min="0"></div><div><label>Ghi chú</label><input id="r_n"></div></div>'+
+ '<div class="row"><button class="btn sm" id="r_add">+ Thêm lịch nhắc</button><span class="msg" id="r_msg"></span></div></div></div>';
+}
+function bindExtra(d,u){
+ const again=()=>look(d.plate,{box:"cres",url:u,extra:custExtra,after:x=>bindExtra(x,u)});
+ $("pf_save").onclick=async()=>{try{await post(u+"/prefs",{service_km:$("pf_km").value,service_months:$("pf_mo").value},"PUT");again()}catch(e){say("pf_msg",e.message,false)}};
+ $("r_add").onclick=async()=>{try{await post(u+"/reminders",{title:$("r_t").value,due_date:$("r_d").value,due_odo:$("r_o").value,note:$("r_n").value});again()}catch(e){say("r_msg",e.message,false)}};
+ document.querySelectorAll("[data-rd]").forEach(b=>b.onclick=async()=>{try{await post(u+"/reminders/"+b.dataset.rd,{done:b.dataset.dv==="1"},"PATCH");again()}catch(e){alert(e.message)}});
+ document.querySelectorAll("[data-rx]").forEach(b=>b.onclick=async()=>{if(confirm("Xóa lịch nhắc này?")){try{await api(u+"/reminders/"+b.dataset.rx,{method:"DELETE"});again()}catch(e){alert(e.message)}}});
+}
+function fillProfile(){if(!me)return;$("p_e").value=me.email;$("p_n").value=me.full_name;$("p_t").value=me.phone||""}
+$("p_save").onclick=async()=>{try{const u=await post("/api/customers/me",{full_name:$("p_n").value,phone:$("p_t").value},"PUT");setSession(tok,u);say("p_msg","Đã lưu.",true)}catch(e){say("p_msg",e.message,false)}};
+$("p_pw").onclick=async()=>{try{await post("/api/customers/password",{old_password:$("p_o").value,new_password:$("p_w").value});$("p_o").value="";$("p_w").value="";say("p_msg2","Đã đổi mật khẩu.",true)}catch(e){say("p_msg2",e.message,false)}};
+
 // ---- Tra cuu ----
 $("go").onclick=()=>look($("q").value);
 $("q").onkeydown=e=>{if(e.key==="Enter")look($("q").value)};
-async function look(raw){
- const box=$("res");if(!String(raw).trim())return;
- $("feat").classList.add("hide");box.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
- let d;try{d=await api("/api/vehicles/"+encodeURIComponent(raw))}catch(e){box.innerHTML='<div class="card">'+esc(e.message)+"</div>";return}
+async function look(raw,opt){
+ const box=$((opt&&opt.box)||"res");if(!String(raw).trim())return;
+ ["res","cres"].forEach(i=>{if(i!==box.id)$(i).innerHTML=""});
+ if(box.id==="res")$("feat").classList.add("hide");else $("feat").classList.remove("hide");box.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+ let d;try{d=await api((opt&&opt.url)||"/api/vehicles/"+encodeURIComponent(raw))}catch(e){box.innerHTML='<div class="card">'+esc(e.message)+"</div>";return}
  curPlate=d.plate;
  const pill=(ok,y,n)=>'<span class="pill '+(ok?"ok":"bad")+'">'+(ok?"✓ "+y:"✗ "+n)+"</span>";
  const items=d.records.map(r=>{
-  const c=r.checks,x=failed(c).length>0,mine=!!me,isPdf=/\.pdf$/.test(r.image_file||"");
+  const c=r.checks,x=failed(c).length>0,mine=isG(),isPdf=/\.pdf$/.test(r.image_file||"");
   const inv=r.image_file?'<a class="thumb" target="_blank" rel="noopener" href="/uploads/'+esc(r.image_file)+'">'+(isPdf?"<span style=\"font-size:34px\">📄</span>":'<img alt="Hóa đơn" src="/uploads/'+esc(r.image_file)+'">')+"<span>Xem hóa đơn đính kèm</span></a>":"";
   return '<div class="it'+(x?" x":"")+'"><div class="itc"><div class="ith"><b>'+esc(r.date)+'</b><span class="tag">'+esc(r.type)+'</span><span class="odo">'+fmt(r.odo)+" km</span></div>"+
   (r.description?"<div>"+esc(r.description)+"</div>":"")+'<div class="sub">'+esc(r.garage)+(r.cost?" · "+fmt(r.cost)+"đ":"")+"</div>"+inv+
@@ -338,14 +463,14 @@ async function look(raw){
  const v=d.vehicle,vk=v?[["Hãng",v.brand],["Dòng xe",v.model],["Năm SX",v.year],["Màu",v.color],["Số khung",v.vin],["Số máy",v.engine]].filter(x=>x[1]):[];
  const vehHtml='<div class="card"><span class="plate">'+esc(d.plate)+"</span>"+(vk.length?'<div class="kv">'+vk.map(x=>"<span>"+x[0]+"</span><span>"+esc(x[1])+"</span>").join("")+"</div>":'<div class="sub">Chưa có thông tin xe.</div>')+"</div>";
  const rm=d.reminder,rmHtml=rm?'<div class="card"><h3>Nhắc bảo dưỡng định kỳ</h3><div style="margin:10px 0"><span class="pill '+RM[rm.status][0]+'">'+RM[rm.status][1]+"</span></div><div>"+esc(rm.text)+
-  '</div><div class="sub" style="margin-top:8px">Quy tắc: mỗi '+fmt(cfg.serviceKm||2000)+" km hoặc "+(cfg.serviceMonths||6)+" tháng kể từ lần bảo dưỡng gần nhất ("+esc(rm.base.date)+", "+fmt(rm.base.odo)+" km).</div></div>":"";
+  '</div><div class="sub" style="margin-top:8px">Quy tắc: mỗi '+fmt(rm.km||cfg.serviceKm||2000)+" km hoặc "+(rm.months||cfg.serviceMonths||6)+" tháng kể từ lần bảo dưỡng gần nhất ("+esc(rm.base.date)+", "+fmt(rm.base.odo)+" km).</div></div>":"";
  box.innerHTML='<div class="banner '+(d.issues?"bad":"ok")+'"><div class="bi">'+(d.issues?"⚠️":"✅")+"</div><div><b>"+(d.issues?"Phát hiện "+d.issues+" mốc bất thường":"Lịch sử toàn vẹn, ODO nhất quán")+
   '</b><div class="sub">'+d.total+" mốc bảo trì · ODO ghi nhận gần nhất "+fmt(d.maxOdo)+' km</div></div><button class="btn ghost sm" id="pdfb">⬇ Xuất báo cáo PDF</button></div>'+
-  '<div class="g2" style="margin-bottom:16px">'+vehHtml+rmHtml+"</div>"+
+  '<div class="g2" style="margin-bottom:16px">'+vehHtml+rmHtml+"</div>"+(opt&&opt.extra?opt.extra(d):"")+
   '<div class="card"><h3>ODO theo thời gian</h3><div class="cv"><canvas id="c_o"></canvas></div></div>'+
   '<div class="card"><h3 style="margin-bottom:14px">Lịch sử bảo trì</h3><div class="tl">'+items+"</div></div>"+
   '<div class="card"><h3>Mã QR tra cứu</h3><div style="background:#fff;display:inline-block;padding:10px;border-radius:12px;margin-top:10px">'+qr+"</div></div>";
- drawOdo(d);$("pdfb").onclick=exportPdf;
+ drawOdo(d);$("pdfb").onclick=exportPdf;if(opt&&opt.after)opt.after(d);
  box.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>chain(b.dataset.v,b.dataset.h,false));
  box.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>chain(b.dataset.a,b.dataset.h,true));
 }
@@ -372,7 +497,7 @@ async function chain(id,hash,write){
 
 (async()=>{
  buildNav();
- if(tok){try{setSession(tok,await api("/api/me"))}catch(e){setSession("",null)}}
+ if(tok){try{setSession(tok,await api("/api/whoami"))}catch(e){setSession("",null)}}
  const m=location.hash.match(/^#xe-(.+)$/);if(m){$("q").value=m[1];look(m[1])}
 })();
 </script>

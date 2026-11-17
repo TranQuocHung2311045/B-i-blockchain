@@ -93,8 +93,24 @@ API: `POST /api/login`, `GET /api/me`. `POST /api/records` và `PATCH /api/recor
 
 API bổ sung: `GET /api/stats` (cần đăng nhập). `GET /api/vehicles/:plate` trả thêm trường `reminder`.
 
+## Tài khoản khách hàng
+
+Khách hàng tự đăng ký bằng email (mật khẩu tối thiểu 8 ký tự, băm scrypt kèm salt). Khách có khu vực riêng gồm:
+
+- **Xe của tôi:** danh sách xe đã liên kết, mỗi xe hiển thị ODO, lần bảo dưỡng gần nhất, trạng thái nhắc và tình trạng toàn vẹn dữ liệu.
+- **Lịch sử bảo dưỡng chi tiết:** ngày, ODO, công việc, chi phí, garage, ảnh hóa đơn, kết quả xác thực từng mốc, biểu đồ ODO, xuất báo cáo PDF.
+- **Lịch nhắc:** nhắc bảo dưỡng định kỳ tự tính (khách chỉnh được chu kỳ km và tháng cho từng xe) và lịch nhắc riêng (đăng kiểm, bảo hiểm, thay lốp...) theo ngày hoặc theo ODO, có đánh dấu hoàn thành. Trang tổng hợp lịch nhắc sắp tới của mọi xe.
+- **Tài khoản:** sửa họ tên, số điện thoại, đổi mật khẩu.
+
+**Liên kết xe với khách (chống nhận nhầm xe):** garage bấm "Tạo mã liên kết cho khách" ở tab Ghi bảo trì, được mã dạng `XXXX-XXXX` (dùng 1 lần, hiệu lực 30 ngày, chỉ lưu bản băm). Khách nhập biển số và mã ở mục "Xe của tôi". Mỗi xe có một chủ; khi xe được bán, garage cấp mã mới và chủ mới nhận xe sẽ thay thế chủ cũ. Nhập sai 5 lần bị khóa 10 phút.
+
+Phân quyền theo vai trò trong token: token garage không dùng được cho API khách hàng và ngược lại; khách chỉ xem được xe thuộc tài khoản của mình, không ghi được mốc bảo trì.
+
+API khách hàng: `POST /api/customers/register|login`, `GET|PUT /api/customers/me`, `POST /api/customers/password`, `POST /api/customers/vehicles/claim`, `GET /api/customers/vehicles`, `GET|DELETE /api/customers/vehicles/:plate`, `PUT .../prefs`, `POST|PATCH|DELETE .../reminders`, `GET /api/customers/reminders`. Garage: `POST /api/vehicles/:plate/claim-code`. Chung: `GET /api/whoami`.
+
 ## Hạn chế và hướng phát triển
 
+- Nhắc bảo dưỡng hiện hiển thị trong ứng dụng, chưa gửi email hoặc tin nhắn tự động.
 - Quét QR bằng camera chưa có; mã QR dẫn tới trang tra cứu.
 - Có thể chuyển SQLite sang MySQL/PostgreSQL bằng cách thay lớp truy cập dữ liệu trong `server.js`.
 - Không bao giờ dùng ví chứa tiền thật cho `PRIVATE_KEY`.
